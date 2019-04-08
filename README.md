@@ -59,3 +59,44 @@ ant randomblack
 A questo punto, si dovrebbe aprire una finestra che mostra graficamente lo
 stato della partita.
 
+## Giocare una partita
+
+Il primo passo e' avviare il server:
+
+```
+ant server
+```
+
+A questo punto, in due terminali differenti, si possono avviare i giocatori.
+Questi possono essere di due tipi:
+
+* Random
+* Human
+
+Il giocatore di tipo random giochera' la partita effettuando delle mosse casuali,
+mentre il giocatore human fornisce un'interfaccia da terminale che permette di
+muovere manualmente le pedine.
+
+L'unica cosa importante, e' avviare **un giocatore di tipo nero ed uno di tipo bianco**.
+
+Esempi:
+
+#### Partita tra due esseri umani
+
+In due terminali diversi, utilizzare i comandi:
+
+```
+ant humanwhite
+
+ant humanblack
+```
+
+#### Partita tra un essere umano ed un giocatore random
+
+In due terminali distinti:
+
+```
+ant humanblack
+
+ant randomwhite
+```
