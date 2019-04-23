@@ -1,13 +1,10 @@
 package it.unibo.ai.didattica.competition.tablut.IA;
 
 import java.io.IOException;
-import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import it.unibo.ai.didattica.competition.tablut.client.TablutClient;
-import it.unibo.ai.didattica.competition.tablut.client.TablutRandomClient;
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.Game;
 import it.unibo.ai.didattica.competition.tablut.domain.GameAshtonTablut;
@@ -20,6 +17,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 
 public class TablutTestClient extends TablutClient {
 	private int game;
+	private static final int timeOut = 30000;
 
 	public TablutTestClient(String player, String name, int gameChosen) throws IOException {
 		super(player, name);
@@ -137,11 +135,11 @@ public class TablutTestClient extends TablutClient {
 						}
 					}
 
-					int[] selected = null;
+//					int[] selected = null;
 
-					boolean found = false;
-					MinMaxEvaluate minmax = new MinMaxEvaluate(this.getCurrentState(), -1.0, 1.0, 30);
-					Action a = minmax.makeDecision(this.getCurrentState());
+//					boolean found = false;
+					TestAI ai = new TestAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut);
+					Action a = ai.makeDecision(this.getCurrentState());
 //					try {
 //						a = new Action("z0", "z0", State.Turn.WHITE);
 //					} catch (IOException e1) {
@@ -228,40 +226,41 @@ public class TablutTestClient extends TablutClient {
 						}
 					}
 
-					int[] selected = null;
+//					int[] selected = null;
 
-					boolean found = false;
-					Action a = null;
-					try {
-						a = new Action("z0", "z0", State.Turn.BLACK);
-					} catch (IOException e1) {
-						// TODO Auto-generated catch block
-						e1.printStackTrace();
-					}
-					;
-					while (!found) {
-						selected = pawns.get(new Random().nextInt(pawns.size() - 1));
-						String from = this.getCurrentState().getBox(selected[0], selected[1]);
-
-						selected = empty.get(new Random().nextInt(empty.size() - 1));
-						String to = this.getCurrentState().getBox(selected[0], selected[1]);
-
-						try {
-							a = new Action(from, to, State.Turn.BLACK);
-						} catch (IOException e1) {
-							// TODO Auto-generated catch block
-							e1.printStackTrace();
-						}
-
-						System.out.println("try: " + a.toString());
-						try {
-							rules.checkMove(state, a);
-							found = true;
-						} catch (Exception e) {
-
-						}
-
-					}
+//					boolean found = false;
+					TestAI ai = new TestAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut);
+					Action a = ai.makeDecision(this.getCurrentState());
+//					try {
+//						a = new Action("z0", "z0", State.Turn.BLACK);
+//					} catch (IOException e1) {
+//						// TODO Auto-generated catch block
+//						e1.printStackTrace();
+//					}
+//					;
+//					while (!found) {
+//						selected = pawns.get(new Random().nextInt(pawns.size() - 1));
+//						String from = this.getCurrentState().getBox(selected[0], selected[1]);
+//
+//						selected = empty.get(new Random().nextInt(empty.size() - 1));
+//						String to = this.getCurrentState().getBox(selected[0], selected[1]);
+//
+//						try {
+//							a = new Action(from, to, State.Turn.BLACK);
+//						} catch (IOException e1) {
+//							// TODO Auto-generated catch block
+//							e1.printStackTrace();
+//						}
+//
+//						System.out.println("try: " + a.toString());
+//						try {
+//							rules.checkMove(state, a);
+//							found = true;
+//						} catch (Exception e) {
+//
+//						}
+//
+//					}
 
 					System.out.println("Mossa scelta: " + a.toString());
 					try {

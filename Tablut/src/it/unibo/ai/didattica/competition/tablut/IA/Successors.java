@@ -130,10 +130,17 @@ public class Successors {
 			for (int j = 0; j < board[i].length; j++) {
 				if (board[i][j].equalsPawn(turn.toString())) {
 					result.addAll(getAllPossibleActions(state, i, j, board));
+				} else if (board[i][j].equals(Pawn.KING) && turn.equals(Turn.WHITE)) {
+					result.addAll(getAllPossibleActions(state, i, j, board));
 				}
 			}
 		}
 		return result;
+	}
+	
+	public static List<Action> getKingActions(State state, int kingRow, int kingCol) {
+		return getAllPossibleActions(state.clone(), kingRow, kingCol, state.clone().getBoard());
+		
 	}
 
 	private static List<Action> getAllPossibleActions(State state, int row, int col, Pawn[][] board) {
@@ -316,8 +323,9 @@ public class Successors {
 	}
 
 	public static State movePawn(State state, Action a) {
-		State.Pawn pawn = state.getPawn(a.getRowFrom(), a.getColumnFrom());
-		State.Pawn[][] newBoard = state.getBoard();
+		State newState = state.clone();
+		State.Pawn pawn = newState.getPawn(a.getRowFrom(), a.getColumnFrom());
+		State.Pawn[][] newBoard = newState.getBoard();
 
 		// libero il trono o una casella qualunque
 		if (a.getColumnFrom() == 4 && a.getRowFrom() == 4) {
@@ -329,22 +337,22 @@ public class Successors {
 		// metto nel nuovo tabellone la pedina mossa
 		newBoard[a.getRowTo()][a.getColumnTo()] = pawn;
 		// aggiorno il tabellone
-		state.setBoard(newBoard);
+		newState.setBoard(newBoard);
 		// cambio il turno
-		if (state.getTurn().equalsTurn(State.Turn.WHITE.toString())) {
-			state.setTurn(State.Turn.BLACK);
+		if (newState.getTurn().equalsTurn(State.Turn.WHITE.toString())) {
+			newState.setTurn(State.Turn.BLACK);
 		} else {
-			state.setTurn(State.Turn.WHITE);
+			newState.setTurn(State.Turn.WHITE);
 		}
 
 		// a questo punto controllo lo stato per eventuali catture
-		if (state.getTurn().equalsTurn("W")) {
-			state = checkCaptureBlack(state, a);
-		} else if (state.getTurn().equalsTurn("B")) {
-			state = checkCaptureWhite(state, a);
+		if (newState.getTurn().equalsTurn("W")) {
+			newState = checkCaptureBlack(newState, a);
+		} else if (newState.getTurn().equalsTurn("B")) {
+			newState = checkCaptureWhite(newState, a);
 		}
 
-		return state;
+		return newState;
 	}
 
 	private static State checkCaptureWhite(State state, Action a) {
