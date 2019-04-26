@@ -101,6 +101,7 @@ public class TablutTestClient extends TablutClient {
 		List<int[]> empty = new ArrayList<int[]>();
 
 		System.out.println("You are player " + this.getPlayer().toString() + "!");
+		int turn = 0;
 
 		while (true) {
 			try {
@@ -134,11 +135,12 @@ public class TablutTestClient extends TablutClient {
 							}
 						}
 					}
+					turn++;
 
 //					int[] selected = null;
 
 //					boolean found = false;
-					TestAI ai = new TestAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut);
+					TestAI ai = new TestAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn);
 					Action a = ai.makeDecision(this.getCurrentState());
 //					try {
 //						a = new Action("z0", "z0", State.Turn.WHITE);
@@ -225,11 +227,12 @@ public class TablutTestClient extends TablutClient {
 							}
 						}
 					}
+					turn++;
 
 //					int[] selected = null;
 
 //					boolean found = false;
-					TestAI ai = new TestAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut);
+					TestAI ai = new TestAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn);
 					Action a = ai.makeDecision(this.getCurrentState());
 //					try {
 //						a = new Action("z0", "z0", State.Turn.BLACK);

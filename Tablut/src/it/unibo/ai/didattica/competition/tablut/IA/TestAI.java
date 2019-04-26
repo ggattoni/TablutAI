@@ -35,6 +35,7 @@ public class TestAI {
 	protected Turn max;
 	protected int blackCount;
 	protected int whiteCount;
+	protected int turn;
 	protected double utilMax;
 	protected double utilMin;
 	protected int currDepthLimit;
@@ -62,13 +63,14 @@ public class TestAI {
 	 * @param time
 	 *            Maximal computation time in seconds.
 	 */
-	public TestAI(State game, double utilMin, double utilMax, long millis) {
+	public TestAI(State game, double utilMin, double utilMax, long millis, int turn) {
 		this.game = game;
 		this.utilMin = utilMin;
 		this.utilMax = utilMax;
 		this.timer = new Timer(millis);
 		this.max = game.getTurn();
-		
+		this.turn = turn;
+
 		this.whiteCount = 0;
 		this.blackCount = 0;
 		for (Pawn[] pArray : game.getBoard()) {
@@ -108,8 +110,8 @@ public class TestAI {
 			heuristicEvaluationUsed = false;
 			ActionStore<Action> newResults = new ActionStore<>();
 			for (Action action : results) {
-				double value = minValue(Successors.movePawn(state, action), player, -Double.MAX_VALUE,
-						Double.MAX_VALUE, 1);
+				double value = minValue(Successors.movePawn(state, action), player, -Double.MAX_VALUE, Double.MAX_VALUE,
+						++turn);
 				if (timer.timeOutOccurred())
 					break; // exit from action loop
 				newResults.add(action, value);
@@ -158,13 +160,13 @@ public class TestAI {
 			return eval(state, player);
 		} else {
 			double value = Double.MAX_VALUE;
-				for (Action action : orderActions(state, Successors.getActions(state), player, depth)) {
-					value = Math.min(value, maxValue(Successors.movePawn(state, action), //
-							player, alpha, beta, depth + 1));
-					if (value <= alpha)
-						return value;
-					beta = Math.min(beta, value);
-				}
+			for (Action action : orderActions(state, Successors.getActions(state), player, depth)) {
+				value = Math.min(value, maxValue(Successors.movePawn(state, action), //
+						player, alpha, beta, depth + 1));
+				if (value <= alpha)
+					return value;
+				beta = Math.min(beta, value);
+			}
 			return value;
 		}
 	}
@@ -207,7 +209,7 @@ public class TestAI {
 	protected boolean hasSafeWinner(double resultUtility) {
 		return resultUtility <= utilMin || resultUtility >= utilMax;
 	}
-	
+
 	private boolean gameEnded(State state) {
 		return !state.getTurn().equals(Turn.BLACK) && !state.getTurn().equals(Turn.WHITE);
 	}
@@ -229,7 +231,7 @@ public class TestAI {
 			}
 		} else {
 			heuristicEvaluationUsed = true;
-//			return (utilMin + utilMax) / 2;
+			// return (utilMin + utilMax) / 2;
 			if (state.getTurn().equals(Turn.BLACK)) {
 				return this.max.equals(Turn.BLACK) ? evalBlack(state) : -evalBlack(state);
 			} else {
@@ -239,12 +241,10 @@ public class TestAI {
 	}
 
 	private double evalWhite(State state) {
-		int freeEscapes = checkMate(state);
-		if (freeEscapes >= 2) {
-			return this.utilMax;
-		} else if (freeEscapes == 1) {
-			return this.utilMax / 2;
-		}
+		return 0.6 * checkMateValue(state) + 0.4 * pawnNumsValue(state);
+	}
+
+	private double pawnNumsValue(State state) {
 		int whiteNum = 1;
 		int blackNum = 0;
 		for (Pawn[] pArray : state.getBoard()) {
@@ -256,8 +256,24 @@ public class TestAI {
 				}
 			}
 		}
+
+//		return (whiteNum / blackNum - this.whiteCount / this.blackCount)
 		
-		return whiteNum / this.whiteCount - blackNum / this.blackCount;
+		return normalize((whiteNum / blackNum - this.whiteCount / this.blackCount), -247 / 144, 65 / 9)
+				* (this.max.equals(Turn.WHITE) ? this.utilMax : this.utilMin);
+	}
+
+	private double checkMateValue(State state) {
+		int freeEscapes = checkMate(state);
+		double result;
+		if (freeEscapes >= 2) {
+			result = this.utilMax;
+		} else if (freeEscapes == 1) {
+			result = this.utilMax / 2;
+		} else {
+			result = (this.utilMax + this.utilMin) / 2;
+		}
+		return result * (this.max.equals(Turn.WHITE) ? this.utilMax : this.utilMin);
 	}
 
 	private int checkMate(State state) {
@@ -273,30 +289,30 @@ public class TestAI {
 				}
 			}
 		}
-		
-		/** Se il re si trova nella parte centrale della board la fuga è bloccata
-		 *  dagli accampamenti, quindi non è possibile avere due vie di fuga libere	 */
+
+		/**
+		 * Se il re si trova nella parte centrale della board la fuga è bloccata dagli
+		 * accampamenti, quindi non è possibile avere due vie di fuga libere
+		 */
 		if (kingRow >= 3 && kingRow <= 5 && kingCol >= 3 && kingCol <= 5) {
 			return 0;
 		}
-		
+
 		int freeEscapes = 0;
 		List<Action> kingActions = Successors.getKingActions(state, kingRow, kingCol);
 
 		for (Action a : kingActions) {
 			int toRow = a.getRowTo();
 			int toCol = a.getColumnTo();
-			
-			if ((toRow == 0 && (toCol == 1 || toCol == 2 || toCol == 6 || toCol == 7)) ||
-				(toRow == 1 && (toCol == 0 || toCol == 8)) ||
-				(toRow == 2 && (toCol == 0 || toCol == 8)) ||
-				(toRow == 6 && (toCol == 0 || toCol == 8)) ||
-				(toRow == 7 && (toCol == 0 || toCol == 8)) ||
-				(toRow == 8 && (toCol == 1 || toCol == 2 || toCol == 6 || toCol == 7))) {
+
+			if ((toRow == 0 && (toCol == 1 || toCol == 2 || toCol == 6 || toCol == 7))
+					|| (toRow == 1 && (toCol == 0 || toCol == 8)) || (toRow == 2 && (toCol == 0 || toCol == 8))
+					|| (toRow == 6 && (toCol == 0 || toCol == 8)) || (toRow == 7 && (toCol == 0 || toCol == 8))
+					|| (toRow == 8 && (toCol == 1 || toCol == 2 || toCol == 6 || toCol == 7))) {
 				freeEscapes++;
 			}
 		}
-		
+
 		return freeEscapes;
 	}
 
@@ -312,8 +328,8 @@ public class TestAI {
 				}
 			}
 		}
-		
-		return - whiteNum / this.whiteCount + blackNum / this.blackCount;
+
+		return -whiteNum / this.whiteCount + blackNum / this.blackCount;
 	}
 
 	/**
@@ -322,6 +338,10 @@ public class TestAI {
 	 */
 	public List<Action> orderActions(State state, List<Action> actions, Turn player, int depth) {
 		return actions;
+	}
+
+	public double normalize(double x, double min, double max) {
+		return (((x - min) / (max - min)) - 0.5) * 2 * Double.MAX_VALUE;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////////////
@@ -425,7 +445,7 @@ public class TestAI {
 
 	public static void main(String[] args) {
 		State s = new StateTablut();
-		TestAI ai = new TestAI(s, -Double.MAX_VALUE, Double.MAX_VALUE, 1000 * 60 * 10);
+		TestAI ai = new TestAI(s, -Double.MAX_VALUE, Double.MAX_VALUE, 1000 * 60 * 10, 1);
 		Action a = ai.makeDecision(s);
 		System.out.println(a);
 	}
