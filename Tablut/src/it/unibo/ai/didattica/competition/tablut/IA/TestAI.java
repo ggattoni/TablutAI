@@ -418,8 +418,8 @@ public class TestAI {
 	private double evalWhite(State state) {
 		if (this.turn > 1 && this.turn < 5)
 			return 0.4 * checkMateValue(state) + 0.2 * pawnNumsValue(state) + 0.1 * checkWhiteDiagonalMove(state)
-					+ 0.05 * externMove(state) - 0.1 * canBeKilled(state) - 0.2 * samePawnMove(state)
-					+ 0.3 * oneRowOneBlack(state) + 0.1 * kingNotInCitadelRow(state);
+					+ 0.05 * externMove(state) - 0.1 * canBeKilled(state) - 0.1 * samePawnMove(state) + 0.1 * maxDiagonalLength(state, Turn.WHITE)
+					+ 0.1 * oneRowOneBlack(state) + 0.2 * bestEscape(state) + 0.1 * kingNotInCitadelRow(state);
 		else
 			return 0.5 * checkMateValue(state) + 0.4 * pawnNumsValue(state) - 1 * samePawnMove(state)
 					+ 0.05 * oneRowOneBlack(state) + 0.05 * kingNotInCitadelRow(state);
@@ -478,6 +478,143 @@ public class TestAI {
 			}
 		}
 		return normalize(stateValue, 0, 4);
+	}
+
+	private double diagonal(int row, int col, boolean left, Pawn[][] board, Turn turn, double length) {
+		if (left) {
+			if (!isInBoard(row + 1, col - 1)
+					|| (turn.equals(Turn.WHITE) && (board[row + 1][col - 1].equals(Pawn.WHITE))
+							|| board[row + 1][col - 1].equals(Pawn.KING))
+					|| (turn.equals(Turn.BLACK) && board[row + 1][col - 1].equals(Pawn.BLACK))
+					|| board[row + 1][col - 1].equals(Pawn.KING)) {
+				return length;
+			} else {
+				return diagonal(row + 1, col - 1, true, board, turn, length + 1);
+			}
+		} else {
+			if (!isInBoard(row + 1, col + 1)
+					|| (turn.equals(Turn.WHITE) && (board[row + 1][col + 1].equals(Pawn.WHITE))
+							|| board[row + 1][col + 1].equals(Pawn.KING))
+					|| (turn.equals(Turn.BLACK) && board[row + 1][col + 1].equals(Pawn.BLACK))
+					|| board[row + 1][col + 1].equals(Pawn.KING)) {
+				return length;
+			} else {
+				return diagonal(row + 1, col + 1, false, board, turn, length + 1);
+			}
+		}
+	}
+
+	private double maxDiagonalLength(State state, Turn turn) {
+		double maxLength = 0;
+		Pawn[][] board = state.getBoard();
+		if (turn.equals(Turn.BLACK)) {
+			for (int i = 0; i < 9; i++) {
+				for (int j = 0; j < 9; j++) {
+					if (board[i][j].equals(Pawn.BLACK)) {
+						maxLength = Double.max(diagonal(i, j, true, board, turn, 1),
+								diagonal(i, j, false, board, turn, 1));
+					}
+				}
+			}
+		} else {
+			for (int i = 0; i < 9; i++) {
+				for (int j = 0; j < 9; j++) {
+					if (board[i][j].equals(Pawn.WHITE) || board[i][j].equals(Pawn.KING)) {
+						maxLength = Double.max(diagonal(i, j, true, board, turn, 1),
+								diagonal(i, j, false, board, turn, 1));
+					}
+				}
+			}
+		}
+		return normalize(maxLength, 0, 9);
+	}
+
+	// Scegliere il quadrante più vantaggioso per la via di fuga del re in base al
+	// numero di pedine nel quadrante
+	private double bestEscape(State state) {
+		Pawn[][] board = state.getBoard();
+		double countAltoSinistra = 0;
+		double countAltoDestra = 0;
+		double countBassoSinistra = 0;
+		double countBassoDestra = 0;
+		boolean isKing1 = false;
+		boolean isKing2 = false;
+		boolean isKing3 = false;
+		boolean isKing4 = false;
+
+		// check alto sinistra
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				if (board[i][j].equals(Pawn.KING)) {
+					isKing1 = true;
+				}
+				if (board[i][j].equals(Pawn.BLACK) || board[i][j].equals(Pawn.WHITE)) {
+					countAltoSinistra++;
+				}
+
+			}
+		}
+
+		// check alto destra
+		for (int i = 0; i < 4; i++) {
+			for (int j = 5; j < 9; j++) {
+				if (board[i][j].equals(Pawn.KING)) {
+					isKing2 = true;
+				}
+				if (board[i][j].equals(Pawn.BLACK) || board[i][j].equals(Pawn.WHITE)) {
+					countAltoDestra++;
+				}
+
+			}
+		}
+		// check basso destra
+		for (int i = 5; i < 9; i++) {
+			for (int j = 5; j < 9; j++) {
+				if (board[i][j].equals(Pawn.KING)) {
+					isKing3 = true;
+				}
+				if (board[i][j].equals(Pawn.BLACK) || board[i][j].equals(Pawn.WHITE)) {
+					countBassoDestra++;
+				}
+
+			}
+		}
+
+		// check basso sinistra
+		for (int i = 5; i < 9; i++) {
+			for (int j = 0; j < 4; j++) {
+				if (board[i][j].equals(Pawn.KING)) {
+					isKing4 = true;
+				}
+				if (board[i][j].equals(Pawn.BLACK) || board[i][j].equals(Pawn.WHITE)) {
+					countBassoSinistra++;
+				}
+
+			}
+		}
+
+		if (countAltoSinistra <= countAltoDestra && countAltoSinistra <= countBassoSinistra
+				&& countAltoSinistra <= countBassoDestra && isKing1) {
+			return 10;
+		}
+
+		if (countAltoDestra <= countAltoSinistra && countAltoDestra <= countBassoSinistra
+				&& countAltoDestra <= countBassoDestra && isKing2) {
+			return normalize(10, 0, 10);
+		}
+
+		if (countBassoDestra <= countAltoSinistra && countBassoDestra <= countBassoSinistra
+				&& countBassoDestra <= countAltoDestra && isKing3) {
+			return normalize(10, 0, 10);
+		}
+
+		if (countBassoSinistra <= countAltoSinistra && countBassoSinistra <= countAltoDestra
+				&& countBassoSinistra <= countBassoDestra && isKing4) {
+			return normalize(10, 0, 10);
+		}
+
+		return normalize(0, 0, 10);
+
 	}
 
 	private double checkBlackDiagonalMove(State state) {
@@ -603,8 +740,9 @@ public class TestAI {
 			// Controllo solo sotto o sotto-sopra
 			if (board[whereRiga + 1][whereColonna].equals(Pawn.WHITE)) {
 				if (board[whereRiga - 1][whereColonna].equals(Pawn.WHITE) || whereColonna == 4) {
-					return Double.MAX_VALUE; // Sotto ho bianco, sopra ho bianca oppure un muro, mi va bene uguale perch�
-								// mangio!
+					return Double.MAX_VALUE; // Sotto ho bianco, sopra ho bianca oppure un muro, mi va bene uguale
+												// perch�
+					// mangio!
 				}
 				maxPoints = normalize(10, 0, 30);
 			}
@@ -782,7 +920,7 @@ public class TestAI {
 				}
 			}
 		}
-//		return maxPoint;
+		// return maxPoint;
 		return normalize(maxPoint, 0, 40);
 	}
 	// Dovrebbe variare rispetto allo stato del gioco, se siamo in VANTAGGIO DI
@@ -875,7 +1013,7 @@ public class TestAI {
 		}
 
 		return -whiteNum / this.whiteCount + blackNum / this.blackCount + checkBlackDiagonalMove(state)
-				+ externMove(state) - canBeKilled(state) - samePawnMove(state) + coverRow(state) + canIEatTheKing(state)
+				+ externMove(state) - canBeKilled(state) - samePawnMove(state) + coverRow(state)
 				+ canIBlockTheKing(state);
 	}
 
@@ -890,10 +1028,10 @@ public class TestAI {
 
 	// Controllo se posso mangiare il re, mossa piu' prioritaria di tutte per il
 	// nero
-//	private double canIEatTheKing(State state) {
-//		// TODO
-//		return 0;
-//	}
+	// private double canIEatTheKing(State state) {
+	// // TODO
+	// return 0;
+	// }
 
 	// Se il re ha una possibilit� di vittoria, posiziono una pedina nera per
 	// bloccarlo
