@@ -691,5 +691,28 @@ public class Successors {
 		}
 		return c;
 	}
+	public static boolean isWall(int i, int j) {
+		if(i==0 && (j >=3 || j <= 5))
+			return true;
+		if(i == 1 && j == 4)
+			return true;
+		if(i==8 && (j>=3 || j <=5))
+			return true;
+		if(i == 7 && j == 4)
+			return true;
+		if(j == 0 &&( i >= 3 || i <= 5))
+			return true;
+		if(j == 1 && i == 4)
+			return true;
+		if(j == 8 &&( i >= 3 && i <=5))
+			return true;
+		if(j ==7 && i == 4)
+			return true;
+		if( i ==4 && j ==4)
+			return true;
+		
+		return false;
+	}
+
 
 }
