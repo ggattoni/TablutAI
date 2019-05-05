@@ -418,8 +418,9 @@ public class TestAI {
 	private double evalWhite(State state) {
 		if (this.turn > 1 && this.turn < 5)
 			return 0.4 * checkMateValue(state) + 0.2 * pawnNumsValue(state) + 0.1 * checkWhiteDiagonalMove(state)
-					+ 0.05 * externMove(state) - 0.1 * canBeKilled(state) - 0.1 * samePawnMove(state) + 0.1 * maxDiagonalLength(state, Turn.WHITE)
-					+ 0.1 * oneRowOneBlack(state) + 0.2 * bestEscape(state) + 0.1 * kingNotInCitadelRow(state);
+					+ 0.05 * externMove(state) - 0.1 * canBeKilled(state) - 0.1 * samePawnMove(state)
+					+ 0.1 * maxDiagonalLength(state, Turn.WHITE) + 0.1 * oneRowOneBlack(state) + 0.2 * bestEscape(state)
+					+ 0.1 * kingNotInCitadelRow(state);
 		else
 			return 0.5 * checkMateValue(state) + 0.4 * pawnNumsValue(state) - 1 * samePawnMove(state)
 					+ 0.05 * oneRowOneBlack(state) + 0.05 * kingNotInCitadelRow(state);
@@ -1000,21 +1001,21 @@ public class TestAI {
 	}
 
 	private double evalBlack(State state) {
-		int whiteNum = 0;
-		int blackNum = 0;
-		for (Pawn[] pArray : state.getBoard()) {
-			for (Pawn p : pArray) {
-				if (p.equals(Pawn.WHITE) || p.equals(Pawn.KING)) {
-					whiteNum++;
-				} else if (p.equals(Pawn.BLACK)) {
-					blackNum++;
-				}
-			}
-		}
+		// int whiteNum = 0;
+		// int blackNum = 0;
+		// for (Pawn[] pArray : state.getBoard()) {
+		// for (Pawn p : pArray) {
+		// if (p.equals(Pawn.WHITE) || p.equals(Pawn.KING)) {
+		// whiteNum++;
+		// } else if (p.equals(Pawn.BLACK)) {
+		// blackNum++;
+		// }
+		// }
+		// }
 
-		return -whiteNum / this.whiteCount + blackNum / this.blackCount + checkBlackDiagonalMove(state)
-				+ externMove(state) - canBeKilled(state) - samePawnMove(state) + coverRow(state)
-				+ canIBlockTheKing(state);
+		return 0.1 * pawnNumsValue(state) + 0.05 * checkBlackDiagonalMove(state)
+				+ 0.1 * externMove(state) /*- canBeKilled(state)*/ + 0.1 * samePawnMove(state) + 0.1 * coverRow(state)
+				+ 0.2 * canIBlockTheKing(state) + 0.3 * coverExit(state);
 	}
 
 	// Se una riga NON contiene pedine nere e ne ho una che ne contiene PIU' di una
@@ -1078,6 +1079,85 @@ public class TestAI {
 			}
 		}
 		return maxPoints;
+	}
+
+	// blocca punti di fuga del re
+	private double coverExit(State state) {
+		int val = 0;
+		boolean isKing1 = false;
+		boolean isKing2 = false;
+		boolean isKing3 = false;
+		boolean isKing4 = false;
+
+		Pawn[][] board = state.getBoard();
+
+		// check alto sinistra
+		for (int i = 0; i < 4; i++) {
+			for (int j = 0; j < 4; j++) {
+				if (board[i][j].equals(Pawn.KING)) {
+					isKing1 = true;
+				}
+
+			}
+		}
+
+		// check alto destra
+		for (int i = 0; i < 4; i++) {
+			for (int j = 5; j < 9; j++) {
+				if (board[i][j].equals(Pawn.KING)) {
+					isKing2 = true;
+				}
+
+			}
+		}
+		// check basso destra
+		for (int i = 5; i < 9; i++) {
+			for (int j = 5; j < 9; j++) {
+				if (board[i][j].equals(Pawn.KING)) {
+					isKing3 = true;
+				}
+
+			}
+		}
+
+		// check basso sinistra
+		for (int i = 5; i < 9; i++) {
+			for (int j = 0; j < 4; j++) {
+				if (board[i][j].equals(Pawn.KING)) {
+					isKing4 = true;
+				}
+
+			}
+		}
+
+		if (board[1][2].equals(Pawn.BLACK) || board[2][1].equals(Pawn.BLACK)) {
+			val++;
+			if (isKing1 == true)
+				val++;
+
+		}
+
+		if (board[1][6].equals(Pawn.BLACK) || board[2][7].equals(Pawn.BLACK)) {
+			val++;
+			if (isKing2 == true)
+				val++;
+
+		}
+
+		if (board[6][7].equals(Pawn.BLACK) || (board[7][6].equals(Pawn.BLACK))) {
+			val++;
+			if (isKing3 == true) {
+				val++;
+			}
+		}
+		if (board[7][2].equals(Pawn.BLACK) || board[6][1].equals(Pawn.BLACK)) {
+			val++;
+			if (isKing4 == true) {
+				val++;
+			}
+		}
+
+		return val;
 	}
 
 	/**
