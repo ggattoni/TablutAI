@@ -17,10 +17,13 @@ import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 public class TablutRandomClient extends TablutClient {
 
 	private int game;
+	private Random random;
+	private static final long SEED = 10;
 
 	public TablutRandomClient(String player, String name, int gameChosen) throws UnknownHostException, IOException {
 		super(player, name);
 		game = gameChosen;
+		this.random = new Random(SEED);
 	}
 
 	public TablutRandomClient(String player) throws UnknownHostException, IOException {
@@ -150,14 +153,14 @@ public class TablutRandomClient extends TablutClient {
 					}
 					while (!found) {
 						if (pawns.size() > 1) {
-							selected = pawns.get(new Random().nextInt(pawns.size() - 1));
+							selected = pawns.get(this.random.nextInt(pawns.size() - 1));
 						} else {
 							selected = pawns.get(0);
 						}
 						
 						String from = this.getCurrentState().getBox(selected[0], selected[1]);
 
-						selected = empty.get(new Random().nextInt(empty.size() - 1));
+						selected = empty.get(this.random.nextInt(empty.size() - 1));
 						String to = this.getCurrentState().getBox(selected[0], selected[1]);
 
 						try {
@@ -240,10 +243,10 @@ public class TablutRandomClient extends TablutClient {
 					}
 					;
 					while (!found) {
-						selected = pawns.get(new Random().nextInt(pawns.size() - 1));
+						selected = pawns.get(this.random.nextInt(pawns.size() - 1));
 						String from = this.getCurrentState().getBox(selected[0], selected[1]);
 
-						selected = empty.get(new Random().nextInt(empty.size() - 1));
+						selected = empty.get(this.random.nextInt(empty.size() - 1));
 						String to = this.getCurrentState().getBox(selected[0], selected[1]);
 
 						try {

@@ -39,33 +39,33 @@ public class Successors {
 		return result;
 	}
 
-	private static List<State> getWhiteSuccessors(State state) {
-		LinkedList<State> result = new LinkedList<>();
-		Pawn[][] board = state.getBoard();
-		for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board[i].length; j++) {
-				if (board[i][j].equalsPawn("W")) {
-					result.addAll(getPawnSuccessors(state, i, j, board));
-				}
-			}
-		}
-
-		return result;
-	}
-
-	private static List<State> getBlackSuccessors(State state) {
-		LinkedList<State> result = new LinkedList<>();
-		Pawn[][] board = state.getBoard();
-		for (int i = 0; i < board.length; i++) {
-			for (int j = 0; j < board[i].length; j++) {
-				if (board[i][j].equalsPawn("B")) {
-					result.addAll(getPawnSuccessors(state, i, j, board));
-				}
-			}
-		}
-
-		return result;
-	}
+//	private static List<State> getWhiteSuccessors(State state) {
+//		LinkedList<State> result = new LinkedList<>();
+//		Pawn[][] board = state.getBoard();
+//		for (int i = 0; i < board.length; i++) {
+//			for (int j = 0; j < board[i].length; j++) {
+//				if (board[i][j].equalsPawn("W")) {
+//					result.addAll(getPawnSuccessors(state, i, j, board));
+//				}
+//			}
+//		}
+//
+//		return result;
+//	}
+//
+//	private static List<State> getBlackSuccessors(State state) {
+//		LinkedList<State> result = new LinkedList<>();
+//		Pawn[][] board = state.getBoard();
+//		for (int i = 0; i < board.length; i++) {
+//			for (int j = 0; j < board[i].length; j++) {
+//				if (board[i][j].equalsPawn("B")) {
+//					result.addAll(getPawnSuccessors(state, i, j, board));
+//				}
+//			}
+//		}
+//
+//		return result;
+//	}
 
 	private static List<State> getPawnSuccessors(State state, int row, int col, Pawn[][] board) {
 		LinkedList<State> result = new LinkedList<>();
@@ -138,9 +138,43 @@ public class Successors {
 		return result;
 	}
 	
+	public static List<Action> getActions(State state, Turn turn) {
+		LinkedList<Action> result = new LinkedList<>();
+		Pawn[][] board = state.getBoard();
+		for (int i = 0; i < board.length; i++) {
+			for (int j = 0; j < board[i].length; j++) {
+				if (board[i][j].equalsPawn(turn.toString())) {
+					result.addAll(getAllPossibleActions(state, i, j, board));
+				} else if (board[i][j].equals(Pawn.KING) && turn.equals(Turn.WHITE)) {
+					result.addAll(getAllPossibleActions(state, i, j, board));
+				}
+			}
+		}
+		return result;
+	}
+
+	public static List<Action> getActionsWithout(State state, int row, int col) {
+		Turn turn = state.getTurn();
+		LinkedList<Action> result = new LinkedList<>();
+		Pawn[][] board = state.getBoard();
+		for (int i = 0; i < board.length; i++) {
+			for (int j = 0; j < board[i].length; j++) {
+				if (row != i || col != j) {
+					if (board[i][j].equalsPawn(turn.toString())) {
+						result.addAll(getAllPossibleActions(state, i, j, board));
+					} else if (board[i][j].equals(Pawn.KING) && turn.equals(Turn.WHITE)) {
+						result.addAll(getAllPossibleActions(state, i, j, board));
+					}
+				}
+			}
+		}
+		return result;
+
+	}
+
 	public static List<Action> getKingActions(State state, int kingRow, int kingCol) {
 		return getAllPossibleActions(state.clone(), kingRow, kingCol, state.clone().getBoard());
-		
+
 	}
 
 	private static List<Action> getAllPossibleActions(State state, int row, int col, Pawn[][] board) {
@@ -505,7 +539,7 @@ public class Successors {
 
 	private static State checkCaptureBlackKingDown(State state, Action a) {
 		List<String> citadels = getCitadels();
-		
+
 		// ho il re sotto
 		if (a.getRowTo() < state.getBoard().length - 2
 				&& state.getPawn(a.getRowTo() + 1, a.getColumnTo()).equalsPawn("K")) {
@@ -548,7 +582,7 @@ public class Successors {
 
 	private static State checkCaptureBlackKingUp(State state, Action a) {
 		List<String> citadels = getCitadels();
-		
+
 		// ho il re sopra
 		if (a.getRowTo() > 1 && state.getPawn(a.getRowTo() - 1, a.getColumnTo()).equalsPawn("K")) {
 			// re sul trono
@@ -590,7 +624,7 @@ public class Successors {
 
 	private static State checkCaptureBlackPawnRight(State state, Action a) {
 		List<String> citadels = getCitadels();
-		
+
 		// mangio a destra
 		if (a.getColumnTo() < state.getBoard().length - 2
 				&& state.getPawn(a.getRowTo(), a.getColumnTo() + 1).equalsPawn("W")) {
@@ -614,7 +648,7 @@ public class Successors {
 
 	private static State checkCaptureBlackPawnLeft(State state, Action a) {
 		List<String> citadels = getCitadels();
-		
+
 		// mangio a sinistra
 		if (a.getColumnTo() > 1 && state.getPawn(a.getRowTo(), a.getColumnTo() - 1).equalsPawn("W")
 				&& (state.getPawn(a.getRowTo(), a.getColumnTo() - 2).equalsPawn("B")
@@ -628,7 +662,7 @@ public class Successors {
 
 	private static State checkCaptureBlackPawnUp(State state, Action a) {
 		List<String> citadels = getCitadels();
-		
+
 		// controllo se mangio sopra
 		if (a.getRowTo() > 1 && state.getPawn(a.getRowTo() - 1, a.getColumnTo()).equalsPawn("W")
 				&& (state.getPawn(a.getRowTo() - 2, a.getColumnTo()).equalsPawn("B")
@@ -642,7 +676,7 @@ public class Successors {
 
 	private static State checkCaptureBlackPawnDown(State state, Action a) {
 		List<String> citadels = getCitadels();
-		
+
 		// controllo se mangio sotto
 		if (a.getRowTo() < state.getBoard().length - 2
 				&& state.getPawn(a.getRowTo() + 1, a.getColumnTo()).equalsPawn("W")
@@ -691,28 +725,5 @@ public class Successors {
 		}
 		return c;
 	}
-	public static boolean isWall(int i, int j) {
-		if(i==0 && (j >=3 || j <= 5))
-			return true;
-		if(i == 1 && j == 4)
-			return true;
-		if(i==8 && (j>=3 || j <=5))
-			return true;
-		if(i == 7 && j == 4)
-			return true;
-		if(j == 0 &&( i >= 3 || i <= 5))
-			return true;
-		if(j == 1 && i == 4)
-			return true;
-		if(j == 8 &&( i >= 3 && i <=5))
-			return true;
-		if(j ==7 && i == 4)
-			return true;
-		if( i ==4 && j ==4)
-			return true;
-		
-		return false;
-	}
-
 
 }

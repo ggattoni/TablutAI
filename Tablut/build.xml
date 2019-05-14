@@ -60,8 +60,17 @@
         </java>
     </target>
 
-    <target name="testwhite">
+    <target name="white">
         <java classname="it.unibo.ai.didattica.competition.tablut.IA.TablutTestWhiteClient" fork="true">
+            <classpath>
+                <pathelement location="lib/gson-2.2.2.jar"/>
+                <pathelement location="build"/>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="black">
+        <java classname="it.unibo.ai.didattica.competition.tablut.IA.TablutTestBlackClient" fork="true">
             <classpath>
                 <pathelement location="lib/gson-2.2.2.jar"/>
                 <pathelement location="build"/>

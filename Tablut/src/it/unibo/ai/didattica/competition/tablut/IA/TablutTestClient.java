@@ -13,15 +13,18 @@ import it.unibo.ai.didattica.competition.tablut.domain.GameTablut;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
 import it.unibo.ai.didattica.competition.tablut.domain.StateBrandub;
 import it.unibo.ai.didattica.competition.tablut.domain.StateTablut;
+import it.unibo.ai.didattica.competition.tablut.domain.State.Pawn;
 import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 
 public class TablutTestClient extends TablutClient {
 	private int game;
-	private static final int timeOut = 30000;
+	private static final int timeOut = 15000;
+	private List<State> drawConditions;
 
 	public TablutTestClient(String player, String name, int gameChosen) throws IOException {
 		super(player, name);
 		game = gameChosen;
+		this.drawConditions = new ArrayList<>();
 	}
 
 	public TablutTestClient(String player) throws IOException {
@@ -102,6 +105,9 @@ public class TablutTestClient extends TablutClient {
 
 		System.out.println("You are player " + this.getPlayer().toString() + "!");
 		int turn = 0;
+		int rowLastPawnMoved = -1;
+		int colLastPawnMoved = -1;
+		boolean repeated = false;
 
 		while (true) {
 			try {
@@ -113,68 +119,81 @@ public class TablutTestClient extends TablutClient {
 			}
 			System.out.println("Current state:");
 			state = this.getCurrentState();
+			updateDrawConditions(state);
 			System.out.println(state.toString());
 
 			if (this.getPlayer().equals(Turn.WHITE)) {
 				// è il mio turno (BIANCO)
 				if (this.getCurrentState().getTurn().equals(StateTablut.Turn.WHITE)) {
-					int[] buf;
-					for (int i = 0; i < state.getBoard().length; i++) {
-						for (int j = 0; j < state.getBoard().length; j++) {
-							if (state.getPawn(i, j).equalsPawn(State.Pawn.WHITE.toString())
-									|| state.getPawn(i, j).equalsPawn(State.Pawn.KING.toString())) {
-								buf = new int[2];
-								buf[0] = i;
-								buf[1] = j;
-								pawns.add(buf);
-							} else if (state.getPawn(i, j).equalsPawn(State.Pawn.EMPTY.toString())) {
-								buf = new int[2];
-								buf[0] = i;
-								buf[1] = j;
-								empty.add(buf);
-							}
-						}
-					}
+//					int[] buf;
+//					for (int i = 0; i < state.getBoard().length; i++) {
+//						for (int j = 0; j < state.getBoard().length; j++) {
+//							if (state.getPawn(i, j).equalsPawn(State.Pawn.WHITE.toString())
+//									|| state.getPawn(i, j).equalsPawn(State.Pawn.KING.toString())) {
+//								buf = new int[2];
+//								buf[0] = i;
+//								buf[1] = j;
+//								pawns.add(buf);
+//							} else if (state.getPawn(i, j).equalsPawn(State.Pawn.EMPTY.toString())) {
+//								buf = new int[2];
+//								buf[0] = i;
+//								buf[1] = j;
+//								empty.add(buf);
+//							}
+//						}
+//					}
 					turn++;
 
-//					int[] selected = null;
+					// int[] selected = null;
 
-//					boolean found = false;
-					TestAI ai = new TestAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn);
-					Action a = ai.makeDecision(this.getCurrentState());
-//					try {
-//						a = new Action("z0", "z0", State.Turn.WHITE);
-//					} catch (IOException e1) {
-//						// TODO Auto-generated catch block
-//						e1.printStackTrace();
-//					}
-//					while (!found) {
-//						if (pawns.size() > 1) {
-//							selected = pawns.get(new Random().nextInt(pawns.size() - 1));
-//						} else {
-//							selected = pawns.get(0);
-//						}
-//
-//						String from = this.getCurrentState().getBox(selected[0], selected[1]);
-//
-//						selected = empty.get(new Random().nextInt(empty.size() - 1));
-//						String to = this.getCurrentState().getBox(selected[0], selected[1]);
-//
-//						try {
-//							a = new Action(from, to, State.Turn.WHITE);
-//						} catch (IOException e1) {
-//							// TODO Auto-generated catch block
-//							e1.printStackTrace();
-//						}
-//
-//						try {
-//							rules.checkMove(state, a);
-//							found = true;
-//						} catch (Exception e) {
-//
-//						}
-//
-//					}
+					// boolean found = false;
+					BasicAI ai = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, this.drawConditions);
+					Action a = null;
+					if (repeated) {
+						a = ai.makeDecision(this.getCurrentState(), -1, -1/*rowLastPawnMoved, colLastPawnMoved*/);
+					} else {
+						a = ai.makeDecision(this.getCurrentState(), -1, -1);
+					}
+
+					// Se ho rimosso la stessa pedina
+					repeated = rowLastPawnMoved == a.getRowFrom() && colLastPawnMoved == a.getColumnFrom();
+
+					// Save new position last moved pawn
+					rowLastPawnMoved = a.getRowTo();
+					colLastPawnMoved = a.getColumnTo();
+					// try {
+					// a = new Action("z0", "z0", State.Turn.WHITE);
+					// } catch (IOException e1) {
+					// // TODO Auto-generated catch block
+					// e1.printStackTrace();
+					// }
+					// while (!found) {
+					// if (pawns.size() > 1) {
+					// selected = pawns.get(new Random().nextInt(pawns.size() - 1));
+					// } else {
+					// selected = pawns.get(0);
+					// }
+					//
+					// String from = this.getCurrentState().getBox(selected[0], selected[1]);
+					//
+					// selected = empty.get(new Random().nextInt(empty.size() - 1));
+					// String to = this.getCurrentState().getBox(selected[0], selected[1]);
+					//
+					// try {
+					// a = new Action(from, to, State.Turn.WHITE);
+					// } catch (IOException e1) {
+					// // TODO Auto-generated catch block
+					// e1.printStackTrace();
+					// }
+					//
+					// try {
+					// rules.checkMove(state, a);
+					// found = true;
+					// } catch (Exception e) {
+					//
+					// }
+					//
+					// }
 
 					System.out.println("Mossa scelta: " + a.toString());
 					try {
@@ -211,59 +230,71 @@ public class TablutTestClient extends TablutClient {
 
 				// � il mio turno (NERO)
 				if (this.getCurrentState().getTurn().equals(StateTablut.Turn.BLACK)) {
-					int[] buf;
-					for (int i = 0; i < state.getBoard().length; i++) {
-						for (int j = 0; j < state.getBoard().length; j++) {
-							if (state.getPawn(i, j).equalsPawn(State.Pawn.BLACK.toString())) {
-								buf = new int[2];
-								buf[0] = i;
-								buf[1] = j;
-								pawns.add(buf);
-							} else if (state.getPawn(i, j).equalsPawn(State.Pawn.EMPTY.toString())) {
-								buf = new int[2];
-								buf[0] = i;
-								buf[1] = j;
-								empty.add(buf);
-							}
-						}
-					}
+//					int[] buf;
+//					for (int i = 0; i < state.getBoard().length; i++) {
+//						for (int j = 0; j < state.getBoard().length; j++) {
+//							if (state.getPawn(i, j).equalsPawn(State.Pawn.BLACK.toString())) {
+//								buf = new int[2];
+//								buf[0] = i;
+//								buf[1] = j;
+//								pawns.add(buf);
+//							} else if (state.getPawn(i, j).equalsPawn(State.Pawn.EMPTY.toString())) {
+//								buf = new int[2];
+//								buf[0] = i;
+//								buf[1] = j;
+//								empty.add(buf);
+//							}
+//						}
+//					}
 					turn++;
 
-//					int[] selected = null;
+					// int[] selected = null;
 
-//					boolean found = false;
-					TestAI ai = new TestAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn);
-					Action a = ai.makeDecision(this.getCurrentState());
-//					try {
-//						a = new Action("z0", "z0", State.Turn.BLACK);
-//					} catch (IOException e1) {
-//						// TODO Auto-generated catch block
-//						e1.printStackTrace();
-//					}
-//					;
-//					while (!found) {
-//						selected = pawns.get(new Random().nextInt(pawns.size() - 1));
-//						String from = this.getCurrentState().getBox(selected[0], selected[1]);
-//
-//						selected = empty.get(new Random().nextInt(empty.size() - 1));
-//						String to = this.getCurrentState().getBox(selected[0], selected[1]);
-//
-//						try {
-//							a = new Action(from, to, State.Turn.BLACK);
-//						} catch (IOException e1) {
-//							// TODO Auto-generated catch block
-//							e1.printStackTrace();
-//						}
-//
-//						System.out.println("try: " + a.toString());
-//						try {
-//							rules.checkMove(state, a);
-//							found = true;
-//						} catch (Exception e) {
-//
-//						}
-//
-//					}
+					// boolean found = false;
+					ComplexAI ai = new ComplexAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, drawConditions);
+					Action a = null;
+					if (repeated) {
+						a = ai.makeDecision(this.getCurrentState(), -1, -1/*rowLastPawnMoved, colLastPawnMoved*/);
+					} else {
+						a = ai.makeDecision(this.getCurrentState(), -1, -1);
+					}
+
+					// Se ho rimosso la stessa pedina
+					repeated = rowLastPawnMoved == a.getRowFrom() && colLastPawnMoved == a.getColumnFrom();
+
+					// Save new position last moved pawn
+					rowLastPawnMoved = a.getRowTo();
+					colLastPawnMoved = a.getColumnTo();
+					// try {
+					// a = new Action("z0", "z0", State.Turn.BLACK);
+					// } catch (IOException e1) {
+					// // TODO Auto-generated catch block
+					// e1.printStackTrace();
+					// }
+					// ;
+					// while (!found) {
+					// selected = pawns.get(new Random().nextInt(pawns.size() - 1));
+					// String from = this.getCurrentState().getBox(selected[0], selected[1]);
+					//
+					// selected = empty.get(new Random().nextInt(empty.size() - 1));
+					// String to = this.getCurrentState().getBox(selected[0], selected[1]);
+					//
+					// try {
+					// a = new Action(from, to, State.Turn.BLACK);
+					// } catch (IOException e1) {
+					// // TODO Auto-generated catch block
+					// e1.printStackTrace();
+					// }
+					//
+					// System.out.println("try: " + a.toString());
+					// try {
+					// rules.checkMove(state, a);
+					// found = true;
+					// } catch (Exception e) {
+					//
+					// }
+					//
+					// }
 
 					System.out.println("Mossa scelta: " + a.toString());
 					try {
@@ -293,6 +324,34 @@ public class TablutTestClient extends TablutClient {
 			}
 		}
 
+	}
+
+	private void updateDrawConditions(State state) {
+		if (this.drawConditions.isEmpty()) {
+			this.drawConditions.add(state);
+		} else {
+			int newPawnNum = 0;
+			int oldPawnNum = 0;
+			Pawn[][] newBoard = state.getBoard();
+			Pawn[][] oldBoard = drawConditions.get(0).getBoard();
+			for (int row = 0; row < 9; row++) {
+				for (int col = 0; col < 9; col++) {
+					if (!newBoard[row][col].equals(Pawn.EMPTY) && !newBoard[row][col].equals(Pawn.THRONE)) {
+						newPawnNum++;
+					}
+					if (!oldBoard[row][col].equals(Pawn.EMPTY) && !oldBoard[row][col].equals(Pawn.THRONE)) {
+						oldPawnNum++;
+					}
+				}
+			}
+			if (newPawnNum == oldPawnNum) {
+				this.drawConditions.add(state);
+			} else {
+				this.drawConditions.clear();
+				this.drawConditions.add(state);
+			}
+		}
+		
 	}
 
 }
