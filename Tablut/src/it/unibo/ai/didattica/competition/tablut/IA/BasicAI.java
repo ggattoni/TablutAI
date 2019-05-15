@@ -1,6 +1,7 @@
 package it.unibo.ai.didattica.competition.tablut.IA;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Hashtable;
@@ -27,13 +28,15 @@ import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
  *            Type which is used for players in the game.
  * @author Ruediger Lunde
  */
-public class BasicAI {
+public class BasicAI extends Thread {
 
 	public final static String METRICS_NODES_EXPANDED = "nodesExpanded";
 	public final static String METRICS_MAX_DEPTH = "maxDepth";
 
-	protected State game;
+	protected it.unibo.ai.didattica.competition.tablut.domain.State game;
 	protected Turn max;
+	protected List<Action> actions;
+	
 	protected int blackCount;
 	protected int whiteCount;
 	protected int blackPawnsAroundKing;
@@ -46,8 +49,14 @@ public class BasicAI {
 	// have been evaluated.
 	private Timer timer;
 	private boolean logEnabled;
+	private long stateExplored = 0;
 
-	private List<State> drawConditions;
+	private List<it.unibo.ai.didattica.competition.tablut.domain.State> drawConditions;
+	
+	// Variabili risultato
+	private Action bestAction = null;
+	private double bestActionValue = Double.NaN;
+	private boolean hasEnded = false;
 
 	private Metrics metrics = new Metrics();
 
@@ -67,15 +76,16 @@ public class BasicAI {
 	 * @param time
 	 *            Maximal computation time in seconds.
 	 */
-	public BasicAI(State game, double utilMin, double utilMax, long millis, int turn, List<State> draw) {
+	public BasicAI(it.unibo.ai.didattica.competition.tablut.domain.State game, double utilMin, double utilMax, long millis, int turn, List<it.unibo.ai.didattica.competition.tablut.domain.State> draw, List<Action> actions) {
 		this.game = game;
 		this.utilMin = utilMin;
 		this.utilMax = utilMax;
 		this.turn = turn;
+		this.actions = actions;
 		this.timer = new Timer(millis);
 		this.max = game.getTurn();
 		this.drawConditions = draw;
-		System.out.println("Draw conditions: " + this.drawConditions.size());
+//		System.out.println("Draw conditions: " + this.drawConditions.size());
 
 		this.whiteCount = 0;
 		this.blackCount = 0;
@@ -95,6 +105,29 @@ public class BasicAI {
 	public void setLogEnabled(boolean b) {
 		logEnabled = b;
 	}
+	
+	@Override
+	public void run() {
+		makeDecision();
+		
+	if (Double.isNaN(this.bestActionValue)) {
+		this.bestActionValue = 0.0;
+	}
+		
+		hasEnded = true;
+	}
+	
+	public Action getBestAction() {
+		return this.bestAction;
+	}
+	
+	public double getBestActionValue() {
+		return this.bestActionValue;
+	}
+	
+	public boolean hasEnded() {
+		return this.hasEnded;
+	}
 
 	/**
 	 * Template method controlling the search. It is based on iterative deepening
@@ -102,12 +135,14 @@ public class BasicAI {
 	 * Monsio who had the idea of ordering actions by utility in subsequent
 	 * depth-limited search runs.
 	 */
-
-	public Action makeDecision(State state, int lastRow, int lastCol) {
+	
+	public Action makeDecision(/*State state,*/ /*int lastRow, int lastCol*/) {
 		// Nel primo turno restituisci una mossa standard
 		if (this.turn == 1 && this.max.equals(Turn.WHITE)) {
 			try {
-				return new Action("e3", "f3", Turn.WHITE);
+				this.bestAction = new Action("e3", "f3", Turn.WHITE);
+				this.bestActionValue = 0.0;
+				return this.bestAction;
 			} catch (IOException e) {
 				System.out.println("Non riesco a restituire la prima mossa, provo con la ricerca normale");
 			}
@@ -115,14 +150,9 @@ public class BasicAI {
 
 		metrics = new Metrics();
 		StringBuffer logText = null;
-		Turn player = state.getTurn();
-		List<Action> results = null;
-		// TODO Magari con poche pedine si può muovere anche l'ultima pedina mossa?
-		if (lastRow < 0 || lastCol < 0 || state.getBoard()[lastRow][lastCol].equals(Pawn.KING)) {
-			results = Successors.getActions(state);
-		} else {
-			results = Successors.getActionsWithout(state, lastRow, lastCol);
-		}
+		Turn player = game.getTurn();
+//		List<Action> results = Successors.getActions(game);
+		List<Action> results = this.actions;
 		timer.start();
 		currDepthLimit = 0;
 		do {
@@ -132,11 +162,18 @@ public class BasicAI {
 			heuristicEvaluationUsed = false;
 			ActionStore<Action> newResults = new ActionStore<>();
 			for (Action action : results) {
-				double value = minValue(Successors.movePawn(state, action), player, -Double.MAX_VALUE, Double.MAX_VALUE,
+				double value = minValue(Successors.movePawn(game, action), player, -Double.MAX_VALUE, Double.MAX_VALUE,
 						1);
 				if (timer.timeOutOccurred()) {
-					if (newResults.size() > 0)
-						System.out.println("Eval: " + newResults.utilValues.get(0));
+					if (newResults.size() > 0) {
+//						System.out.println("Eval: " + newResults.utilValues.get(0));
+						this.bestActionValue = newResults.utilValues.get(0);
+						
+						// Check memory usage
+//						Runtime runtime = Runtime.getRuntime();
+//						NumberFormat format = NumberFormat.getInstance();
+//						System.out.println("Memory used: " + format.format(runtime.totalMemory() / 1024));
+					}
 					break; // exit from action loop
 				}
 				newResults.add(action, value);
@@ -149,22 +186,41 @@ public class BasicAI {
 				results = newResults.actions;
 				if (!timer.timeOutOccurred()) {
 					if (hasSafeWinner(newResults.utilValues.get(0))) {
-						System.out.println("Eval: " + newResults.utilValues.get(0));
+//						System.out.println("Eval: " + newResults.utilValues.get(0));
+						this.bestActionValue = newResults.utilValues.get(0);
+						
+						// Check memory usage
+//						Runtime runtime = Runtime.getRuntime();
+//						NumberFormat format = NumberFormat.getInstance();
+//						System.out.println("Memory used: " + format.format(runtime.totalMemory() / 1024));
+						
 						break; // exit from iterative deepening loop
-					} else if (newResults.size() > 1
+					} /* else if (newResults.size() > 1
 							&& isSignificantlyBetter(newResults.utilValues.get(0), newResults.utilValues.get(1))) {
 						System.out.println("Eval: " + newResults.utilValues.get(0));
+						// Check memory usage
+						Runtime runtime = Runtime.getRuntime();
+						NumberFormat format = NumberFormat.getInstance();
+						System.out.println("Memory used: " + format.format(runtime.totalMemory() / 1024));
+						
 						break; // exit from iterative deepening loop
-					}
+					} */
 				}
 			}
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
-		System.out.println("Depth reached = " + currDepthLimit);
+		System.out.println(this.getName() + "\tDepth reached = " + currDepthLimit);
+		System.out.println(this.getName() + "\tStates explored = " + this.stateExplored);
+		
+		this.bestAction = results.get(0);
+//		if (Double.isNaN(this.bestActionValue)) {
+//			this.bestActionValue = 0.0;
+//		}
+		
 		return results.get(0);
 	}
 
 	// returns an utility value
-	public double maxValue(State state, Turn player, double alpha, double beta, int depth) {
+	public double maxValue(it.unibo.ai.didattica.competition.tablut.domain.State state, Turn player, double alpha, double beta, int depth) {
 		updateMetrics(depth);
 		if (gameEnded(state) || depth >= currDepthLimit || timer.timeOutOccurred()) {
 			return eval(state, player);
@@ -182,7 +238,7 @@ public class BasicAI {
 	}
 
 	// returns an utility value
-	public double minValue(State state, Turn player, double alpha, double beta, int depth) {
+	public double minValue(it.unibo.ai.didattica.competition.tablut.domain.State state, Turn player, double alpha, double beta, int depth) {
 		updateMetrics(depth);
 		if (gameEnded(state) || depth >= currDepthLimit || timer.timeOutOccurred()) {
 			return eval(state, player);
@@ -224,9 +280,9 @@ public class BasicAI {
 	 * situations where a clear best action exists. This implementation returns
 	 * always false.
 	 */
-	protected boolean isSignificantlyBetter(double newUtility, double utility) {
-		return false;
-	}
+//	protected boolean isSignificantlyBetter(double newUtility, double utility) {
+//		return false;
+//	}
 
 	/**
 	 * Primitive operation which is used to stop iterative deepening search in
@@ -238,7 +294,7 @@ public class BasicAI {
 		return resultUtility <= utilMin || resultUtility >= utilMax;
 	}
 
-	private boolean gameEnded(State state) {
+	private boolean gameEnded(it.unibo.ai.didattica.competition.tablut.domain.State state) {
 		return !state.getTurn().equals(Turn.BLACK) && !state.getTurn().equals(Turn.WHITE);
 	}
 
@@ -248,7 +304,8 @@ public class BasicAI {
 	 * <code>(utilMin + utilMax) / 2</code> for non-terminal states. When
 	 * overriding, first call the super implementation!
 	 */
-	protected double eval(State state, Turn player) {
+	protected double eval(it.unibo.ai.didattica.competition.tablut.domain.State state, Turn player) {
+		stateExplored++;
 		if (gameEnded(state)) {
 			if (state.getTurn().equals(Turn.BLACKWIN)) {
 				return this.max.equals(Turn.BLACK) ? utilMax : utilMin;
@@ -281,7 +338,7 @@ public class BasicAI {
 		}
 	}
 
-	private double evalWhite(State state) {
+	private double evalWhite(it.unibo.ai.didattica.competition.tablut.domain.State state) {
 		// int freeEscapes = checkMate(state);
 		// if (freeEscapes >= 2) {
 		// return this.utilMax;
@@ -305,7 +362,7 @@ public class BasicAI {
 		return pawnNumsValue(state, Turn.WHITE) + 2.0 * checkMate(state);
 	}
 
-	private int pawnNumsValue(State state, Turn turn) {
+	private int pawnNumsValue(it.unibo.ai.didattica.competition.tablut.domain.State state, Turn turn) {
 		int whiteNum = 1;
 		int blackNum = 0;
 		for (Pawn[] pArray : state.getBoard()) {
@@ -321,7 +378,7 @@ public class BasicAI {
 				: this.whiteCount - whiteNum - (this.blackCount - blackNum);
 	}
 
-	private int checkMate(State state) {
+	private int checkMate(it.unibo.ai.didattica.competition.tablut.domain.State state) {
 		int kingRow = -1;
 		int kingCol = -1;
 		boolean found = false;
@@ -361,7 +418,7 @@ public class BasicAI {
 		return freeEscapes;
 	}
 
-	private double evalBlack(State state) {
+	private double evalBlack(it.unibo.ai.didattica.competition.tablut.domain.State state) {
 		// int whiteNum = 0;
 		// int blackNum = 0;
 		// for (Pawn[] pArray : state.getBoard()) {
@@ -380,11 +437,11 @@ public class BasicAI {
 		return pawnNumsValue(state, Turn.BLACK) + 2.0 * kingSurrounded(state);
 	}
 
-	private int kingSurrounded(State state) {
+	private int kingSurrounded(it.unibo.ai.didattica.competition.tablut.domain.State state) {
 		return kingSurroundedInit(state) - this.blackPawnsAroundKing;
 	}
 
-	private int kingSurroundedInit(State state) {
+	private int kingSurroundedInit(it.unibo.ai.didattica.competition.tablut.domain.State state) {
 		int result = 0;
 		Pawn[][] board = state.getBoard();
 		for (int row = 0; row < 9; row++) {
@@ -413,7 +470,7 @@ public class BasicAI {
 	 * Primitive operation for action ordering. This implementation preserves the
 	 * original order (provided by the game).
 	 */
-	public List<Action> orderActions(State state, List<Action> actions, Turn player, int depth) {
+	public List<Action> orderActions(it.unibo.ai.didattica.competition.tablut.domain.State state, List<Action> actions, Turn player, int depth) {
 		return actions;
 	}
 
@@ -517,9 +574,9 @@ public class BasicAI {
 	}
 
 	public static void main(String[] args) {
-		State s = new StateTablut();
-		BasicAI ai = new BasicAI(s, -Double.MAX_VALUE, Double.MAX_VALUE, 1000 * 60 * 10, 3, new ArrayList<>());
-		Action a = ai.makeDecision(s, -1, -1);
+		it.unibo.ai.didattica.competition.tablut.domain.State s = new StateTablut();
+		BasicAI ai = new BasicAI(s, -Double.MAX_VALUE, Double.MAX_VALUE, 1000 * 60 * 10, 3, new ArrayList<>(), Successors.getActions(s));
+		Action a = ai.makeDecision(/*s,*/ /*-1, -1*/);
 		System.out.println(a);
 	}
 }

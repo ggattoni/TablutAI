@@ -19,7 +19,7 @@
     
     <target name="server">
         <java classname="it.unibo.ai.didattica.competition.tablut.server.Server" fork="true">
-            <classpath>
+	    	<classpath>
                 <pathelement location="lib/gson-2.2.2.jar"/>
                 <pathelement location="build"/>
             </classpath>

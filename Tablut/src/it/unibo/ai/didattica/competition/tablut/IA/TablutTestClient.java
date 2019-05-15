@@ -19,6 +19,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 public class TablutTestClient extends TablutClient {
 	private int game;
 	private static final int timeOut = 15000;
+	private static final int threads = 4;
 	private List<State> drawConditions;
 
 	public TablutTestClient(String player, String name, int gameChosen) throws IOException {
@@ -28,7 +29,7 @@ public class TablutTestClient extends TablutClient {
 	}
 
 	public TablutTestClient(String player) throws IOException {
-		this(player, "test", 4);
+		this(player, "TeletubBIT", 4);
 	}
 
 	public TablutTestClient(String player, String name) throws IOException {
@@ -36,13 +37,13 @@ public class TablutTestClient extends TablutClient {
 	}
 
 	public TablutTestClient(String player, int gameChosen) throws IOException {
-		this(player, "test", gameChosen);
+		this(player, "TeletubBIT", gameChosen);
 	}
 
 	public static void main(String[] args) throws IOException {
 		int gametype = 4;
 		String role = "";
-		String name = "test";
+		String name = "TeletubBIT";
 		// TODO: change the behavior?
 		if (args.length < 1) {
 			System.out.println("You must specify which player you are (WHITE or BLACK)");
@@ -105,9 +106,9 @@ public class TablutTestClient extends TablutClient {
 
 		System.out.println("You are player " + this.getPlayer().toString() + "!");
 		int turn = 0;
-		int rowLastPawnMoved = -1;
-		int colLastPawnMoved = -1;
-		boolean repeated = false;
+//		int rowLastPawnMoved = -1;
+//		int colLastPawnMoved = -1;
+//		boolean repeated = false;
 
 		while (true) {
 			try {
@@ -125,75 +126,75 @@ public class TablutTestClient extends TablutClient {
 			if (this.getPlayer().equals(Turn.WHITE)) {
 				// è il mio turno (BIANCO)
 				if (this.getCurrentState().getTurn().equals(StateTablut.Turn.WHITE)) {
-//					int[] buf;
-//					for (int i = 0; i < state.getBoard().length; i++) {
-//						for (int j = 0; j < state.getBoard().length; j++) {
-//							if (state.getPawn(i, j).equalsPawn(State.Pawn.WHITE.toString())
-//									|| state.getPawn(i, j).equalsPawn(State.Pawn.KING.toString())) {
-//								buf = new int[2];
-//								buf[0] = i;
-//								buf[1] = j;
-//								pawns.add(buf);
-//							} else if (state.getPawn(i, j).equalsPawn(State.Pawn.EMPTY.toString())) {
-//								buf = new int[2];
-//								buf[0] = i;
-//								buf[1] = j;
-//								empty.add(buf);
-//							}
-//						}
-//					}
 					turn++;
-
-					// int[] selected = null;
-
-					// boolean found = false;
-					BasicAI ai = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, this.drawConditions);
-					Action a = null;
-					if (repeated) {
-						a = ai.makeDecision(this.getCurrentState(), -1, -1/*rowLastPawnMoved, colLastPawnMoved*/);
-					} else {
-						a = ai.makeDecision(this.getCurrentState(), -1, -1);
+					
+					// Trovo le mosse possibili
+					List<Action> actions = Successors.getActions(state);
+//					System.out.println("Total size: " + actions.size());
+					int actionsPerThread = actions.size() / threads;
+					int actionsLeft = actions.size() % threads;
+					
+					// Divido le azioni tra i thread
+					List<List<Action>> threadActions = new ArrayList<>();
+					for (int i = 0; i < threads; i++) {
+						if (actionsLeft > 0) {
+							threadActions.add(actions.subList(i * actionsPerThread, i * actionsPerThread + actionsPerThread + 1));
+							actionsLeft--;
+						} else {
+							threadActions.add(actions.subList(i * actionsPerThread, i * actionsPerThread + actionsPerThread));
+						}
 					}
-
+					
+//					for (List<Action> l : threadActions) {
+//						System.out.println("Size: " + l.size());
+//					}
+					
+					List<BasicAI> ai = new ArrayList<>();
+					for (int i = 0; i < threads; i++) {
+						ai.add(new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, drawConditions, threadActions.get(i)));
+						ai.get(i).setName("THREAD " + i);
+						ai.get(i).start();
+					}
+					
+					try {
+						Thread.sleep(timeOut);
+					} catch (InterruptedException e1) {
+						System.out.println("Non sono riuscito ad aspettare l'ia");
+					}
+					
+					// Now choose best action
+					double bestValue = -Double.MAX_VALUE;
+					List<Action> bestChoices = new ArrayList<>();
+					for (int i = 0; i < threads; i++) {
+						System.out.println("THREAD " + i);
+						System.out.println(ai.get(i).getBestAction() != null ? ai.get(i).getBestAction() : "Action: null");
+						System.out.println("Value: " + (!Double.isNaN(ai.get(i).getBestActionValue()) ? ai.get(i).getBestActionValue() : "undefined"));
+						
+						if (ai.get(i).hasEnded() && ai.get(i).getBestActionValue() >= bestValue) {
+							System.out.println("THREAD " + i + ": Trovata una mossa di valore " + ai.get(i).getBestActionValue());
+							System.out.println(ai.get(i).getBestAction());
+							bestValue = ai.get(i).getBestActionValue();
+							bestChoices.add(ai.get(i).getBestAction());
+						} else if (!ai.get(i).hasEnded()) {
+							i--;
+						}
+					}
+					Action a = bestChoices.get(0);
+					
+//					BasicAI ai = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, this.drawConditions, actions);
+//					Action a = ai.makeDecision(/*this.getCurrentState(),*/ /*rowLastPawnMoved, colLastPawnMoved*/);
+					
+//					Action a2 = ai.getBestAction();
+//					double value = ai.getBestActionValue();
+//					System.out.println("I found this move with value " + value);
+//					System.out.println(a2);
+					
 					// Se ho rimosso la stessa pedina
-					repeated = rowLastPawnMoved == a.getRowFrom() && colLastPawnMoved == a.getColumnFrom();
+//					repeated = rowLastPawnMoved == a.getRowFrom() && colLastPawnMoved == a.getColumnFrom();
 
 					// Save new position last moved pawn
-					rowLastPawnMoved = a.getRowTo();
-					colLastPawnMoved = a.getColumnTo();
-					// try {
-					// a = new Action("z0", "z0", State.Turn.WHITE);
-					// } catch (IOException e1) {
-					// // TODO Auto-generated catch block
-					// e1.printStackTrace();
-					// }
-					// while (!found) {
-					// if (pawns.size() > 1) {
-					// selected = pawns.get(new Random().nextInt(pawns.size() - 1));
-					// } else {
-					// selected = pawns.get(0);
-					// }
-					//
-					// String from = this.getCurrentState().getBox(selected[0], selected[1]);
-					//
-					// selected = empty.get(new Random().nextInt(empty.size() - 1));
-					// String to = this.getCurrentState().getBox(selected[0], selected[1]);
-					//
-					// try {
-					// a = new Action(from, to, State.Turn.WHITE);
-					// } catch (IOException e1) {
-					// // TODO Auto-generated catch block
-					// e1.printStackTrace();
-					// }
-					//
-					// try {
-					// rules.checkMove(state, a);
-					// found = true;
-					// } catch (Exception e) {
-					//
-					// }
-					//
-					// }
+//					rowLastPawnMoved = a.getRowTo();
+//					colLastPawnMoved = a.getColumnTo();
 
 					System.out.println("Mossa scelta: " + a.toString());
 					try {
@@ -230,72 +231,76 @@ public class TablutTestClient extends TablutClient {
 
 				// � il mio turno (NERO)
 				if (this.getCurrentState().getTurn().equals(StateTablut.Turn.BLACK)) {
-//					int[] buf;
-//					for (int i = 0; i < state.getBoard().length; i++) {
-//						for (int j = 0; j < state.getBoard().length; j++) {
-//							if (state.getPawn(i, j).equalsPawn(State.Pawn.BLACK.toString())) {
-//								buf = new int[2];
-//								buf[0] = i;
-//								buf[1] = j;
-//								pawns.add(buf);
-//							} else if (state.getPawn(i, j).equalsPawn(State.Pawn.EMPTY.toString())) {
-//								buf = new int[2];
-//								buf[0] = i;
-//								buf[1] = j;
-//								empty.add(buf);
-//							}
-//						}
-//					}
 					turn++;
 
-					// int[] selected = null;
-
-					// boolean found = false;
-					ComplexAI ai = new ComplexAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, drawConditions);
-					Action a = null;
-					if (repeated) {
-						a = ai.makeDecision(this.getCurrentState(), -1, -1/*rowLastPawnMoved, colLastPawnMoved*/);
-					} else {
-						a = ai.makeDecision(this.getCurrentState(), -1, -1);
+					// Trovo le mosse possibili
+					List<Action> actions = Successors.getActions(state);
+//					System.out.println("Total size: " + actions.size());
+					int actionsPerThread = actions.size() / threads;
+					int actionsLeft = actions.size() % threads;
+					
+					// Divido le azioni tra i thread
+					List<List<Action>> threadActions = new ArrayList<>();
+					for (int i = 0; i < threads; i++) {
+						if (actionsLeft > 0) {
+							threadActions.add(actions.subList(i * actionsPerThread, i * actionsPerThread + actionsPerThread + 1));
+							actionsLeft--;
+						} else {
+							threadActions.add(actions.subList(i * actionsPerThread, i * actionsPerThread + actionsPerThread));
+						}
 					}
-
+					
+//					for (List<Action> l : threadActions) {
+//						System.out.println("Size: " + l.size());
+//					}
+					
+					List<BasicAI> ai = new ArrayList<>();
+					for (int i = 0; i < threads; i++) {
+						ai.add(new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, drawConditions, threadActions.get(i)));
+						ai.get(i).setName("THREAD " + i);
+						ai.get(i).start();
+					}
+					
+					try {
+						Thread.sleep(timeOut);
+					} catch (InterruptedException e1) {
+						System.out.println("Non sono riuscito ad aspettare l'ia");
+					}
+					
+					// Now choose best action
+					double bestValue = -Double.MAX_VALUE;
+					List<Action> bestChoices = new ArrayList<>();
+					for (int i = 0; i < threads; i++) {
+//						System.out.println("THREAD " + i);
+//						System.out.println(ai.get(i).getBestAction() != null ? ai.get(i).getBestAction() : "Action: null");
+//						System.out.println("Value: " + (!Double.isNaN(ai.get(i).getBestActionValue()) ? ai.get(i).getBestActionValue() : "undefined"));
+						
+						if (ai.get(i).hasEnded() && ai.get(i).getBestActionValue() >= bestValue) {
+							System.out.println("THREAD " + i + ": Trovata una mossa di valore " + ai.get(i).getBestActionValue());
+							System.out.println(ai.get(i).getBestAction());
+							bestValue = ai.get(i).getBestActionValue();
+							bestChoices.add(ai.get(i).getBestAction());
+						} else if (!ai.get(i).hasEnded()) {
+							i--;
+						}
+					}
+					Action a = bestChoices.get(0);
+					
+//					BasicAI ai = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, drawConditions, actions);
+//					Action a = ai.makeDecision(/*this.getCurrentState(),*/ /*rowLastPawnMoved, colLastPawnMoved*/);
+					
+//					Action a2 = ai.getBestAction();
+//					double value = ai.getBestActionValue();
+//					System.out.println("I found this move with value " + value);
+//					System.out.println(a2);
+					
 					// Se ho rimosso la stessa pedina
-					repeated = rowLastPawnMoved == a.getRowFrom() && colLastPawnMoved == a.getColumnFrom();
+//					repeated = rowLastPawnMoved == a.getRowFrom() && colLastPawnMoved == a.getColumnFrom();
 
 					// Save new position last moved pawn
-					rowLastPawnMoved = a.getRowTo();
-					colLastPawnMoved = a.getColumnTo();
-					// try {
-					// a = new Action("z0", "z0", State.Turn.BLACK);
-					// } catch (IOException e1) {
-					// // TODO Auto-generated catch block
-					// e1.printStackTrace();
-					// }
-					// ;
-					// while (!found) {
-					// selected = pawns.get(new Random().nextInt(pawns.size() - 1));
-					// String from = this.getCurrentState().getBox(selected[0], selected[1]);
-					//
-					// selected = empty.get(new Random().nextInt(empty.size() - 1));
-					// String to = this.getCurrentState().getBox(selected[0], selected[1]);
-					//
-					// try {
-					// a = new Action(from, to, State.Turn.BLACK);
-					// } catch (IOException e1) {
-					// // TODO Auto-generated catch block
-					// e1.printStackTrace();
-					// }
-					//
-					// System.out.println("try: " + a.toString());
-					// try {
-					// rules.checkMove(state, a);
-					// found = true;
-					// } catch (Exception e) {
-					//
-					// }
-					//
-					// }
-
+//					rowLastPawnMoved = a.getRowTo();
+//					colLastPawnMoved = a.getColumnTo();
+					
 					System.out.println("Mossa scelta: " + a.toString());
 					try {
 						this.write(a);
@@ -351,7 +356,7 @@ public class TablutTestClient extends TablutClient {
 				this.drawConditions.add(state);
 			}
 		}
-		
+
 	}
 
 }

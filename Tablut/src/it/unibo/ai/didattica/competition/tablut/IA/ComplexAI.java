@@ -1,7 +1,9 @@
 package it.unibo.ai.didattica.competition.tablut.IA;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Hashtable;
 import java.util.Set;
@@ -118,7 +120,7 @@ public class ComplexAI {
 		// Nel primo turno restituisci una mossa standard
 		if (this.turn == 1 && this.max.equals(Turn.WHITE)) {
 			try {
-				return new Action("e3", "f3", Turn.WHITE);
+				return new Action("e7", "f7", Turn.WHITE);
 			} catch (IOException e) {
 				System.out.println("Non riesco a restituire la prima mossa, provo con la ricerca normale");
 			}
@@ -146,8 +148,13 @@ public class ComplexAI {
 				double value = minValue(Successors.movePawn(state, action), player, -Double.MAX_VALUE, Double.MAX_VALUE,
 						1);
 				if (timer.timeOutOccurred()) {
-					if (newResults.size() > 0)
+					if (newResults.size() > 0) {
 						System.out.println("Eval: " + newResults.utilValues.get(0));
+						// Check memory usage
+						Runtime runtime = Runtime.getRuntime();
+						NumberFormat format = NumberFormat.getInstance();
+						System.out.println("Memory used: " + format.format(runtime.totalMemory() / 1024));
+					}
 					break; // exit from action loop
 				}
 				newResults.add(action, value);
@@ -161,12 +168,22 @@ public class ComplexAI {
 				if (!timer.timeOutOccurred()) {
 					if (hasSafeWinner(newResults.utilValues.get(0))) {
 						System.out.println("Eval: " + newResults.utilValues.get(0));
+						// Check memory usage
+						Runtime runtime = Runtime.getRuntime();
+						NumberFormat format = NumberFormat.getInstance();
+						System.out.println("Memory used: " + format.format(runtime.totalMemory() / 1024));
+						
 						break; // exit from iterative deepening loop
-					} else if (newResults.size() > 1
+					} /* else if (newResults.size() > 1
 							&& isSignificantlyBetter(newResults.utilValues.get(0), newResults.utilValues.get(1))) {
 						System.out.println("Eval: " + newResults.utilValues.get(0));
+						// Check memory usage
+						Runtime runtime = Runtime.getRuntime();
+						NumberFormat format = NumberFormat.getInstance();
+						System.out.println("Memory used: " + format.format(runtime.totalMemory() / 1024));
+						
 						break; // exit from iterative deepening loop
-					}
+					} */
 				}
 			}
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
@@ -235,9 +252,9 @@ public class ComplexAI {
 	 * situations where a clear best action exists. This implementation returns
 	 * always false.
 	 */
-	protected boolean isSignificantlyBetter(double newUtility, double utility) {
-		return false;
-	}
+//	protected boolean isSignificantlyBetter(double newUtility, double utility) {
+//		return false;
+//	}
 
 	/**
 	 * Primitive operation which is used to stop iterative deepening search in
@@ -315,7 +332,7 @@ public class ComplexAI {
 		// return whiteNum / this.whiteCount - blackNum / this.blackCount;
 
 		return pawnNumsValue(state, Turn.WHITE) + 1.0 * checkMate(state) + maxDiagonalLength(state, Turn.WHITE)
-				+ kingActions(state) + bestEscape(state) /*+ minimizeBlackMoves(state)*/;
+				/*+ kingActions(state) */ + bestEscape(state) /*+ minimizeBlackMoves(state)*/;
 	}
 
 	private int pawnNumsValue(State state, Turn turn) {
@@ -394,7 +411,7 @@ public class ComplexAI {
 		// kingSurrounded(state);
 		// return - whiteNum / this.whiteCount + blackNum / this.blackCount;
 
-		return pawnNumsValue(state, Turn.BLACK) + 1.0 * kingSurrounded(state) + maxDiagonalLength(state, Turn.BLACK);
+		return pawnNumsValue(state, Turn.BLACK) + 1.0 * kingSurrounded(state) /*+ maxDiagonalLength(state, Turn.BLACK)*/;
 	}
 
 	private int kingSurrounded(State state) {
@@ -673,8 +690,14 @@ public class ComplexAI {
 	private static class ActionStore<A> {
 		private List<A> actions = new ArrayList<>();
 		private List<Double> utilValues = new ArrayList<>();
+		
+		synchronized void addAll(ActionStore<A> actionsValue) {
+			for (int i = 0; i < actions.size(); i++) {
+				this.add(actionsValue.getActions().get(i), actionsValue.getUtilValues().get(i));
+			}
+		}
 
-		void add(A action, double utilValue) {
+		synchronized void add(A action, double utilValue) {
 			int idx = 0;
 			while (idx < actions.size() && utilValue <= utilValues.get(idx))
 				idx++;
@@ -684,6 +707,14 @@ public class ComplexAI {
 
 		int size() {
 			return actions.size();
+		}
+		
+		List<A> getActions() {
+			return Collections.unmodifiableList(this.actions);
+		}
+		
+		List<Double> getUtilValues() {
+			return Collections.unmodifiableList(this.utilValues);
 		}
 	}
 
@@ -752,4 +783,5 @@ public class ComplexAI {
 		Action a = ai.makeDecision(s, -1, -1);
 		System.out.println(a);
 	}
+
 }

@@ -2,7 +2,6 @@ package it.unibo.ai.didattica.competition.tablut.IA;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 import it.unibo.ai.didattica.competition.tablut.domain.Action;
 import it.unibo.ai.didattica.competition.tablut.domain.State;
