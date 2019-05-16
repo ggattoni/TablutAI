@@ -18,7 +18,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.State.Turn;
 
 public class TablutTestClient extends TablutClient {
 	private int game;
-	private static final int timeOut = 15000;
+	private static final int timeOut = 10000;
 	private static final int threads = 4;
 	private List<State> drawConditions;
 
@@ -145,13 +145,17 @@ public class TablutTestClient extends TablutClient {
 						}
 					}
 					
-//					for (List<Action> l : threadActions) {
+					int threadUsed = 0;
+					for (List<Action> l : threadActions) {
 //						System.out.println("Size: " + l.size());
-//					}
+						if (!l.isEmpty()) {
+							threadUsed++;
+						}
+					}
 					
 					List<BasicAI> ai = new ArrayList<>();
-					for (int i = 0; i < threads; i++) {
-						ai.add(new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, drawConditions, threadActions.get(i)));
+					for (int i = 0; i < threadUsed; i++) {
+						ai.add(new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, (timeOut / 5) * 4, turn, drawConditions, threadActions.get(i)));
 						ai.get(i).setName("THREAD " + i);
 						ai.get(i).start();
 					}
@@ -163,26 +167,27 @@ public class TablutTestClient extends TablutClient {
 					}
 					
 					// Now choose best action
-					double bestValue = -Double.MAX_VALUE;
+//					double bestValue = -Double.MAX_VALUE;
 					List<Action> bestChoices = new ArrayList<>();
-					for (int i = 0; i < threads; i++) {
-						System.out.println("THREAD " + i);
-						System.out.println(ai.get(i).getBestAction() != null ? ai.get(i).getBestAction() : "Action: null");
-						System.out.println("Value: " + (!Double.isNaN(ai.get(i).getBestActionValue()) ? ai.get(i).getBestActionValue() : "undefined"));
+					for (int i = 0; i < threadUsed; i++) {
+//						System.out.println("THREAD " + i);
+//						System.out.println(ai.get(i).getBestAction() != null ? ai.get(i).getBestAction() : "Action: null");
+//						System.out.println("Value: " + (!Double.isNaN(ai.get(i).getBestActionValue()) ? ai.get(i).getBestActionValue() : "undefined"));
 						
-						if (ai.get(i).hasEnded() && ai.get(i).getBestActionValue() >= bestValue) {
+						if (ai.get(i).hasEnded() /*&& ai.get(i).getBestActionValue() >= bestValue*/) {
 							System.out.println("THREAD " + i + ": Trovata una mossa di valore " + ai.get(i).getBestActionValue());
 							System.out.println(ai.get(i).getBestAction());
-							bestValue = ai.get(i).getBestActionValue();
+//							bestValue = ai.get(i).getBestActionValue();
 							bestChoices.add(ai.get(i).getBestAction());
 						} else if (!ai.get(i).hasEnded()) {
 							i--;
 						}
 					}
-					Action a = bestChoices.get(0);
+//					Action a = bestChoices.get(0);
 					
-//					BasicAI ai = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, this.drawConditions, actions);
-//					Action a = ai.makeDecision(/*this.getCurrentState(),*/ /*rowLastPawnMoved, colLastPawnMoved*/);
+					BasicAI finalAi = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut / 5, turn, drawConditions, bestChoices);
+					finalAi.setName("FINAL THREAD");
+					Action a = finalAi.makeDecision(/*this.getCurrentState(),*/ /*rowLastPawnMoved, colLastPawnMoved*/);
 					
 //					Action a2 = ai.getBestAction();
 //					double value = ai.getBestActionValue();
@@ -250,13 +255,17 @@ public class TablutTestClient extends TablutClient {
 						}
 					}
 					
-//					for (List<Action> l : threadActions) {
+					int threadUsed = 0;
+					for (List<Action> l : threadActions) {
 //						System.out.println("Size: " + l.size());
-//					}
+						if (!l.isEmpty()) {
+							threadUsed++;
+						}
+					}
 					
 					List<BasicAI> ai = new ArrayList<>();
-					for (int i = 0; i < threads; i++) {
-						ai.add(new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, drawConditions, threadActions.get(i)));
+					for (int i = 0; i < threadUsed; i++) {
+						ai.add(new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, (timeOut / 4) * 3, turn, drawConditions, threadActions.get(i)));
 						ai.get(i).setName("THREAD " + i);
 						ai.get(i).start();
 					}
@@ -268,26 +277,27 @@ public class TablutTestClient extends TablutClient {
 					}
 					
 					// Now choose best action
-					double bestValue = -Double.MAX_VALUE;
+//					double bestValue = -Double.MAX_VALUE;
 					List<Action> bestChoices = new ArrayList<>();
-					for (int i = 0; i < threads; i++) {
+					for (int i = 0; i < threadUsed; i++) {
 //						System.out.println("THREAD " + i);
 //						System.out.println(ai.get(i).getBestAction() != null ? ai.get(i).getBestAction() : "Action: null");
 //						System.out.println("Value: " + (!Double.isNaN(ai.get(i).getBestActionValue()) ? ai.get(i).getBestActionValue() : "undefined"));
 						
-						if (ai.get(i).hasEnded() && ai.get(i).getBestActionValue() >= bestValue) {
+						if (ai.get(i).hasEnded() /*&& ai.get(i).getBestActionValue() >= bestValue*/) {
 							System.out.println("THREAD " + i + ": Trovata una mossa di valore " + ai.get(i).getBestActionValue());
 							System.out.println(ai.get(i).getBestAction());
-							bestValue = ai.get(i).getBestActionValue();
+//							bestValue = ai.get(i).getBestActionValue();
 							bestChoices.add(ai.get(i).getBestAction());
 						} else if (!ai.get(i).hasEnded()) {
 							i--;
 						}
 					}
-					Action a = bestChoices.get(0);
+//					Action a = bestChoices.get(0);
 					
-//					BasicAI ai = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut, turn, drawConditions, actions);
-//					Action a = ai.makeDecision(/*this.getCurrentState(),*/ /*rowLastPawnMoved, colLastPawnMoved*/);
+					BasicAI finalAi = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut / 4, turn, drawConditions, bestChoices);
+					finalAi.setName("FINAL THREAD");
+					Action a = finalAi.makeDecision(/*this.getCurrentState(),*/ /*rowLastPawnMoved, colLastPawnMoved*/);
 					
 //					Action a2 = ai.getBestAction();
 //					double value = ai.getBestActionValue();

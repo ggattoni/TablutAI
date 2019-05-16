@@ -36,7 +36,7 @@ public class BasicAI extends Thread {
 	protected it.unibo.ai.didattica.competition.tablut.domain.State game;
 	protected Turn max;
 	protected List<Action> actions;
-	
+
 	protected int blackCount;
 	protected int whiteCount;
 	protected int blackPawnsAroundKing;
@@ -52,7 +52,7 @@ public class BasicAI extends Thread {
 	private long stateExplored = 0;
 
 	private List<it.unibo.ai.didattica.competition.tablut.domain.State> drawConditions;
-	
+
 	// Variabili risultato
 	private Action bestAction = null;
 	private double bestActionValue = Double.NaN;
@@ -76,7 +76,9 @@ public class BasicAI extends Thread {
 	 * @param time
 	 *            Maximal computation time in seconds.
 	 */
-	public BasicAI(it.unibo.ai.didattica.competition.tablut.domain.State game, double utilMin, double utilMax, long millis, int turn, List<it.unibo.ai.didattica.competition.tablut.domain.State> draw, List<Action> actions) {
+	public BasicAI(it.unibo.ai.didattica.competition.tablut.domain.State game, double utilMin, double utilMax,
+			long millis, int turn, List<it.unibo.ai.didattica.competition.tablut.domain.State> draw,
+			List<Action> actions) {
 		this.game = game;
 		this.utilMin = utilMin;
 		this.utilMax = utilMax;
@@ -85,7 +87,7 @@ public class BasicAI extends Thread {
 		this.timer = new Timer(millis);
 		this.max = game.getTurn();
 		this.drawConditions = draw;
-//		System.out.println("Draw conditions: " + this.drawConditions.size());
+		// System.out.println("Draw conditions: " + this.drawConditions.size());
 
 		this.whiteCount = 0;
 		this.blackCount = 0;
@@ -105,26 +107,26 @@ public class BasicAI extends Thread {
 	public void setLogEnabled(boolean b) {
 		logEnabled = b;
 	}
-	
+
 	@Override
 	public void run() {
 		makeDecision();
-		
-	if (Double.isNaN(this.bestActionValue)) {
-		this.bestActionValue = 0.0;
-	}
-		
+
+		if (Double.isNaN(this.bestActionValue)) {
+			this.bestActionValue = 0.0;
+		}
+
 		hasEnded = true;
 	}
-	
+
 	public Action getBestAction() {
 		return this.bestAction;
 	}
-	
+
 	public double getBestActionValue() {
 		return this.bestActionValue;
 	}
-	
+
 	public boolean hasEnded() {
 		return this.hasEnded;
 	}
@@ -135,8 +137,8 @@ public class BasicAI extends Thread {
 	 * Monsio who had the idea of ordering actions by utility in subsequent
 	 * depth-limited search runs.
 	 */
-	
-	public Action makeDecision(/*State state,*/ /*int lastRow, int lastCol*/) {
+
+	public Action makeDecision(/* State state, */ /* int lastRow, int lastCol */) {
 		// Nel primo turno restituisci una mossa standard
 		if (this.turn == 1 && this.max.equals(Turn.WHITE)) {
 			try {
@@ -151,7 +153,7 @@ public class BasicAI extends Thread {
 		metrics = new Metrics();
 		StringBuffer logText = null;
 		Turn player = game.getTurn();
-//		List<Action> results = Successors.getActions(game);
+		// List<Action> results = Successors.getActions(game);
 		List<Action> results = this.actions;
 		timer.start();
 		currDepthLimit = 0;
@@ -166,13 +168,14 @@ public class BasicAI extends Thread {
 						1);
 				if (timer.timeOutOccurred()) {
 					if (newResults.size() > 0) {
-//						System.out.println("Eval: " + newResults.utilValues.get(0));
+						// System.out.println("Eval: " + newResults.utilValues.get(0));
 						this.bestActionValue = newResults.utilValues.get(0);
-						
+
 						// Check memory usage
-//						Runtime runtime = Runtime.getRuntime();
-//						NumberFormat format = NumberFormat.getInstance();
-//						System.out.println("Memory used: " + format.format(runtime.totalMemory() / 1024));
+						// Runtime runtime = Runtime.getRuntime();
+						// NumberFormat format = NumberFormat.getInstance();
+						// System.out.println("Memory used: " + format.format(runtime.totalMemory() /
+						// 1024));
 					}
 					break; // exit from action loop
 				}
@@ -186,41 +189,44 @@ public class BasicAI extends Thread {
 				results = newResults.actions;
 				if (!timer.timeOutOccurred()) {
 					if (hasSafeWinner(newResults.utilValues.get(0))) {
-//						System.out.println("Eval: " + newResults.utilValues.get(0));
+						// System.out.println("Eval: " + newResults.utilValues.get(0));
 						this.bestActionValue = newResults.utilValues.get(0);
-						
+
 						// Check memory usage
-//						Runtime runtime = Runtime.getRuntime();
-//						NumberFormat format = NumberFormat.getInstance();
-//						System.out.println("Memory used: " + format.format(runtime.totalMemory() / 1024));
-						
+						// Runtime runtime = Runtime.getRuntime();
+						// NumberFormat format = NumberFormat.getInstance();
+						// System.out.println("Memory used: " + format.format(runtime.totalMemory() /
+						// 1024));
+
 						break; // exit from iterative deepening loop
-					} /* else if (newResults.size() > 1
-							&& isSignificantlyBetter(newResults.utilValues.get(0), newResults.utilValues.get(1))) {
-						System.out.println("Eval: " + newResults.utilValues.get(0));
-						// Check memory usage
-						Runtime runtime = Runtime.getRuntime();
-						NumberFormat format = NumberFormat.getInstance();
-						System.out.println("Memory used: " + format.format(runtime.totalMemory() / 1024));
-						
-						break; // exit from iterative deepening loop
-					} */
+					} /*
+						 * else if (newResults.size() > 1 &&
+						 * isSignificantlyBetter(newResults.utilValues.get(0),
+						 * newResults.utilValues.get(1))) { System.out.println("Eval: " +
+						 * newResults.utilValues.get(0)); // Check memory usage Runtime runtime =
+						 * Runtime.getRuntime(); NumberFormat format = NumberFormat.getInstance();
+						 * System.out.println("Memory used: " + format.format(runtime.totalMemory() /
+						 * 1024));
+						 * 
+						 * break; // exit from iterative deepening loop }
+						 */
 				}
 			}
 		} while (!timer.timeOutOccurred() && heuristicEvaluationUsed);
 		System.out.println(this.getName() + "\tDepth reached = " + currDepthLimit);
 		System.out.println(this.getName() + "\tStates explored = " + this.stateExplored);
-		
+
 		this.bestAction = results.get(0);
-//		if (Double.isNaN(this.bestActionValue)) {
-//			this.bestActionValue = 0.0;
-//		}
-		
+		// if (Double.isNaN(this.bestActionValue)) {
+		// this.bestActionValue = 0.0;
+		// }
+
 		return results.get(0);
 	}
 
 	// returns an utility value
-	public double maxValue(it.unibo.ai.didattica.competition.tablut.domain.State state, Turn player, double alpha, double beta, int depth) {
+	public double maxValue(it.unibo.ai.didattica.competition.tablut.domain.State state, Turn player, double alpha,
+			double beta, int depth) {
 		updateMetrics(depth);
 		if (gameEnded(state) || depth >= currDepthLimit || timer.timeOutOccurred()) {
 			return eval(state, player);
@@ -238,7 +244,8 @@ public class BasicAI extends Thread {
 	}
 
 	// returns an utility value
-	public double minValue(it.unibo.ai.didattica.competition.tablut.domain.State state, Turn player, double alpha, double beta, int depth) {
+	public double minValue(it.unibo.ai.didattica.competition.tablut.domain.State state, Turn player, double alpha,
+			double beta, int depth) {
 		updateMetrics(depth);
 		if (gameEnded(state) || depth >= currDepthLimit || timer.timeOutOccurred()) {
 			return eval(state, player);
@@ -280,9 +287,9 @@ public class BasicAI extends Thread {
 	 * situations where a clear best action exists. This implementation returns
 	 * always false.
 	 */
-//	protected boolean isSignificantlyBetter(double newUtility, double utility) {
-//		return false;
-//	}
+	// protected boolean isSignificantlyBetter(double newUtility, double utility) {
+	// return false;
+	// }
 
 	/**
 	 * Primitive operation which is used to stop iterative deepening search in
@@ -312,18 +319,19 @@ public class BasicAI extends Thread {
 			} else if (state.getTurn().equals(Turn.WHITEWIN)) {
 				return this.max.equals(Turn.WHITE) ? utilMax : utilMin;
 			} else if (drawConditions.contains(state)) {
-				// Evito il pareggio a meno che non siano passati un sacco di turni e sono il bianco
-				if (turn > 35 && player.equals(Turn.WHITE)) {
-					return this.max.equals(Turn.WHITE) ? (utilMin + 1) : (utilMax - 1);
+				// Evito il pareggio a meno che non siano passati un sacco di turni e sono il
+				// bianco
+				// if (turn < 200 && player.equals(Turn.WHITE)) {
+				// return this.max.equals(Turn.WHITE) ? (utilMin + 1) : (utilMax - 1);
+				// } else {
+				if (player.equals(Turn.WHITE)) {
+					return this.max.equals(Turn.WHITE) ? (utilMin / 2) : (utilMax / 2);
+				} else if (player.equals(Turn.BLACK)) {
+					return this.max.equals(Turn.BLACK) ? (utilMin / 2) : (utilMax / 2);
 				} else {
-					if (player.equals(Turn.WHITE)) {
-						return this.max.equals(Turn.WHITE) ? (utilMax / 2) : (utilMin / 2);
-					} else if (player.equals(Turn.BLACK)) {
-						return this.max.equals(Turn.BLACK) ? (utilMax / 2) : (utilMin / 2);
-					} else {
-						return 0.0;
-					}
+					return 0.0;
 				}
+				// }
 			} else {
 				return 0.0;
 			}
@@ -470,7 +478,8 @@ public class BasicAI extends Thread {
 	 * Primitive operation for action ordering. This implementation preserves the
 	 * original order (provided by the game).
 	 */
-	public List<Action> orderActions(it.unibo.ai.didattica.competition.tablut.domain.State state, List<Action> actions, Turn player, int depth) {
+	public List<Action> orderActions(it.unibo.ai.didattica.competition.tablut.domain.State state, List<Action> actions,
+			Turn player, int depth) {
 		return actions;
 	}
 
@@ -575,8 +584,9 @@ public class BasicAI extends Thread {
 
 	public static void main(String[] args) {
 		it.unibo.ai.didattica.competition.tablut.domain.State s = new StateTablut();
-		BasicAI ai = new BasicAI(s, -Double.MAX_VALUE, Double.MAX_VALUE, 1000 * 60 * 10, 3, new ArrayList<>(), Successors.getActions(s));
-		Action a = ai.makeDecision(/*s,*/ /*-1, -1*/);
+		BasicAI ai = new BasicAI(s, -Double.MAX_VALUE, Double.MAX_VALUE, 1000 * 60 * 10, 3, new ArrayList<>(),
+				Successors.getActions(s));
+		Action a = ai.makeDecision(/* s, */ /*-1, -1*/);
 		System.out.println(a);
 	}
 }
