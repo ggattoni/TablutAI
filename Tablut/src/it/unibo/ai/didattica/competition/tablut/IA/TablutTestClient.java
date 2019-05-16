@@ -265,7 +265,7 @@ public class TablutTestClient extends TablutClient {
 					
 					List<BasicAI> ai = new ArrayList<>();
 					for (int i = 0; i < threadUsed; i++) {
-						ai.add(new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, (timeOut / 4) * 3, turn, drawConditions, threadActions.get(i)));
+						ai.add(new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, (timeOut / 5) * 4, turn, drawConditions, threadActions.get(i)));
 						ai.get(i).setName("THREAD " + i);
 						ai.get(i).start();
 					}
@@ -295,7 +295,7 @@ public class TablutTestClient extends TablutClient {
 					}
 //					Action a = bestChoices.get(0);
 					
-					BasicAI finalAi = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut / 4, turn, drawConditions, bestChoices);
+					BasicAI finalAi = new BasicAI(state, -Double.MAX_VALUE, Double.MAX_VALUE, timeOut / 5, turn, drawConditions, bestChoices);
 					finalAi.setName("FINAL THREAD");
 					Action a = finalAi.makeDecision(/*this.getCurrentState(),*/ /*rowLastPawnMoved, colLastPawnMoved*/);
 					
