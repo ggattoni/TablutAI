@@ -321,10 +321,9 @@ public class BasicAI extends Thread {
 			} else if (drawConditions.contains(state)) {
 				// Evito il pareggio a meno che non siano passati un sacco di turni e sono il
 				// bianco
-				// if (turn < 200 && player.equals(Turn.WHITE)) {
-				// return this.max.equals(Turn.WHITE) ? (utilMin + 1) : (utilMax - 1);
-				// } else {
-				if (player.equals(Turn.WHITE)) {
+				if (player.equals(Turn.WHITE) && this.max.equals(Turn.WHITE) && this.blackCount >= 12 && this.whiteCount <= 4) {
+					return utilMax - 1;
+				} else if (player.equals(Turn.WHITE)) {
 					return this.max.equals(Turn.WHITE) ? (utilMin / 2) : (utilMax / 2);
 				} else if (player.equals(Turn.BLACK)) {
 					return this.max.equals(Turn.BLACK) ? (utilMin / 2) : (utilMax / 2);
@@ -582,11 +581,13 @@ public class BasicAI extends Thread {
 		}
 	}
 
-	public static void main(String[] args) {
-		it.unibo.ai.didattica.competition.tablut.domain.State s = new StateTablut();
-		BasicAI ai = new BasicAI(s, -Double.MAX_VALUE, Double.MAX_VALUE, 1000 * 60 * 10, 3, new ArrayList<>(),
-				Successors.getActions(s));
-		Action a = ai.makeDecision(/* s, */ /*-1, -1*/);
-		System.out.println(a);
+	public static void main(String[] args) throws IOException {
+//		it.unibo.ai.didattica.competition.tablut.domain.State s = new StateTablut();
+//		BasicAI ai = new BasicAI(s, -Double.MAX_VALUE, Double.MAX_VALUE, 1000 * 60 * 10, 3, new ArrayList<>(),
+//				Successors.getActions(s));
+//		Action a = ai.makeDecision(/* s, */ /*-1, -1*/);
+		Action a = new Action("e5", "e6", Turn.BLACK);
+		Action a2 = new Action("e5", "e6", Turn.BLACK);
+		System.out.println(a.equals(a2));
 	}
 }

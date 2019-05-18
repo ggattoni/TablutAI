@@ -21,7 +21,7 @@ public class TablutRandomClient extends TablutClient {
 	private static final long SEED = 10;
 
 	public TablutRandomClient(String player, String name, int gameChosen) throws UnknownHostException, IOException {
-		super(player, name);
+		super(player, name, "localhost");
 		game = gameChosen;
 		this.random = new Random(SEED);
 	}

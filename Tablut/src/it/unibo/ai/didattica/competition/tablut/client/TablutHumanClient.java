@@ -17,7 +17,7 @@ import it.unibo.ai.didattica.competition.tablut.domain.StateTablut;
 public class TablutHumanClient extends TablutClient {
 
 	public TablutHumanClient(String player) throws UnknownHostException, IOException {
-		super(player, "humanInterface");
+		super(player, "humanInterface", "localhost");
 	}
 
 	public static void main(String[] args) throws UnknownHostException, IOException, ClassNotFoundException {
