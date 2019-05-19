@@ -149,6 +149,24 @@ public class BasicAI extends Thread {
 				System.out.println("Non riesco a restituire la prima mossa, provo con la ricerca normale");
 			}
 		}
+		
+		// Al quinto turno del bianco muoviamo il re se può muoversi
+		if (this.turn >= 5 && this.max.equals(Turn.WHITE)) {
+			Pawn[][] board = this.game.getBoard();
+			if (board[4][4].equals(Pawn.KING)) {
+				List<Action> kingActions = Successors.getKingActions(game, 4, 4);
+				if (!kingActions.isEmpty()) {
+					for (Action a : kingActions) {
+						// Se mi sposto in E4, F5, E6 o D5 restituisci l'azione corrispondente
+						if (a.getTo().equals("e4") || a.getTo().equals("f5") || a.getTo().equals("e6") || a.getTo().equals("d5")) {
+							this.bestAction = a;
+							this.bestActionValue = 0.0;
+							return a;
+						}
+					}
+				}
+			}
+		}
 
 		metrics = new Metrics();
 		StringBuffer logText = null;
