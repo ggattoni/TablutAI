@@ -62,7 +62,7 @@ public class TablutTestClient extends TablutClient {
 				+ "\tCPUs must be an integer > 0; default: 2";
 
 		if (args.length < 1) {
-			System.out.println("You must specify which player you are (WHITE or BLACK)");
+			System.out.println("You must specify which player you are (white or black)");
 			System.exit(-1);
 		} else {
 			System.out.println(args[0]);
