@@ -55,8 +55,8 @@ public class TablutTestClient extends TablutClient {
 		int timeOut = 59000;
 		int threads = 2;
 
-		String usage = "Usage: java -jar Tablut" + (role.toLowerCase().equals("white") ? "White" : "Black")
-				+ "Client [-t <timeout>] [-a <address>] [-p <CPUs>]\n"
+		String usage = "Usage: java -jar TeleTabBIT.jar [white | black] "
+				+ "[-t <timeout>] [-a <address>] [-p <CPUs>]\n"
 				+ "\ttimeout must be an integer > 0 (number of seconds); default: 60\n"
 				+ "\taddress must be the address of the server, default: localhost\n"
 				+ "\tCPUs must be an integer > 0; default: 2";
