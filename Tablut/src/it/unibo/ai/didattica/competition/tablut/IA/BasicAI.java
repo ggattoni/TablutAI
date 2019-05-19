@@ -138,7 +138,8 @@ public class BasicAI extends Thread {
 	 * depth-limited search runs.
 	 */
 
-	public Action makeDecision(/* State state, */ /* int lastRow, int lastCol */) {
+	public Action makeDecision() {
+		
 		// Nel primo turno restituisci una mossa standard
 		if (this.turn == 1 && this.max.equals(Turn.WHITE)) {
 			try {
